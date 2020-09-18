@@ -4,7 +4,13 @@ import time
 import argparse
 
 import numpy as np
-import torch
+try:
+    import torch
+except ImportError:
+    try:
+        import tensorflow as tf
+    except ImportError:
+        print("No pytorch and tensorflow module")
 
 
 def set_parser():
@@ -68,12 +74,16 @@ def main():
     gpus_free, gpus_memory = gpu_manager.choose_free_gpu(num=args.gpu_nums)
 
     sizes = [int(compute_storage_size(i)) for i in gpus_memory]
-    print(sizes)
 
     if len(gpus_free) > 0:
         for gpus_id, size in zip(gpus_free, sizes):
             print("Scramble GPU {}".format(gpus_id))
-            torch.zeros([size, size, size], dtype=torch.double, device=gpus_id)
+            try:
+                torch.zeros([size, size, size], dtype=torch.double, device=gpus_id)
+            except:
+                # with tf.device('/gpu:{}'.format(gpus_id)):
+                os.environ["CUDA_VISIBLE_DEVICES"] = str(gpus_id)
+                tf.zeros([size, size, size], dtype=tf.dtypes.float64)
         time.sleep(args.times)
 
     else:
