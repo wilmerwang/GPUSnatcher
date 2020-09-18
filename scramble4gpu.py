@@ -1,9 +1,23 @@
 # -*- coding: utf-8 -*-
 import os
 import time
+import argparse
 
 import numpy as np
 import torch
+
+
+def set_parser():
+    parser = argparse.ArgumentParser(description='..')
+    parser.add_argument('-p', '--proportion', type=float, default=0.8, 
+        help='The ratio of gpu free memory to total memory')
+    parser.add_argument('-n', '--gpu_nums', type=int, default=1,
+        help='The numbers of GPU to scramble')
+    parser.add_argument('-t', '--times', type=int, default=60000,
+        help='Sleep time if scramble gpu')
+    args = parser.parse_args()
+
+    return args
 
 
 def parse(qargs, results):
@@ -15,7 +29,7 @@ def parse(qargs, results):
     return result_np
 
 
-def query_gpu(*args):
+def query_gpu():
     qargs = ['index', 'memory.free', 'memory.total']
     cmd = 'nvidia-smi --query-gpu={} --format=csv, noheader'.format(','.join(qargs))
     results = os.popen(cmd).readlines()
@@ -24,36 +38,46 @@ def query_gpu(*args):
 
 
 class GPUManager(object):
-    def __init__(self, *args):
+    def __init__(self, args):
         self._args = args
 
     def choose_free_gpu(self, num=1):
-        qresult, qindex = query_gpu(*self._args)
+        qresult, qindex = query_gpu()
         qresult = qresult.astype('int')
 
         if qresult.shape[0] < num:
             print('The number GPU {} < num {}'.format(len(qresult), num))
         else:
             qresult_sort_index = np.argsort(-qresult[:, 1])
-            idex = [i for i in qresult_sort_index[:num] if qresult[i][1]/qresult[i][2] > 0.8]
+            idex = [i for i in qresult_sort_index[:num] if qresult[i][1]/qresult[i][2] > self._args.proportion]
             gpus_index = qresult[:, 0][idex]
+            gpus_memory = qresult[:, 1][idex]
 
-            return gpus_index
+            return gpus_index, gpus_memory
+
+
+def compute_storage_size(memory):
+    return pow(memory * 1024 * 1024 / 8, 1/3) * 0.9
 
 
 # if __name__ == '__main__':
 def main():
-    gpu_manager = GPUManager()
-    gpus_free = gpu_manager.choose_free_gpu(num=1)
+    args = set_parser()
+
+    gpu_manager = GPUManager(args)
+    gpus_free, gpus_memory = gpu_manager.choose_free_gpu(num=args.gpu_nums)
+
+    sizes = [int(compute_storage_size(i)) for i in gpus_memory]
+    print(sizes)
 
     if len(gpus_free) > 0:
-        for gpus_id in gpus_free:
+        for gpus_id, size in zip(gpus_free, sizes):
             print("Scramble GPU {}".format(gpus_id))
-            torch.zeros([1000, 1000, 1000], dtype=torch.double, device=gpus_id)
-        time.sleep(60000)
+            torch.zeros([size, size, size], dtype=torch.double, device=gpus_id)
+        time.sleep(args.times)
 
     else:
-        print("No")
+        print()
 
 
 if __name__ == '__main__':
