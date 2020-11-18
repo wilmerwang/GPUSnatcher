@@ -19,7 +19,7 @@ def set_parser():
         help='The ratio of gpu free memory to total memory')
     parser.add_argument('-n', '--gpu_nums', type=int, default=1,
         help='The numbers of GPU to scramble')
-    parser.add_argument('-t', '--times', type=int, default=60000,
+    parser.add_argument('-t', '--times', type=int, default=1800,
         help='Sleep time if scramble gpu')
     args = parser.parse_args()
 
@@ -76,6 +76,7 @@ def main():
     sizes = [int(compute_storage_size(i)) for i in gpus_memory]
 
     if len(gpus_free) > 0:
+        ids = []
         for gpus_id, size in zip(gpus_free, sizes):
             print("Scramble GPU {}".format(gpus_id))
             try:
@@ -84,12 +85,17 @@ def main():
                 # with tf.device('/gpu:{}'.format(gpus_id)):
                 os.environ["CUDA_VISIBLE_DEVICES"] = str(gpus_id)
                 tf.zeros([size, size, size], dtype=tf.dtypes.float64)
+            ids.append(gpus_id)
         time.sleep(args.times)
 
+        return ids
+
     else:
-        print()
+        return 
 
 
 if __name__ == '__main__':
     while True:
-        main()
+        ids = main()
+        if len(ids) != 0:
+            break
