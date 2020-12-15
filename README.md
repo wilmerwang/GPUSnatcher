@@ -28,5 +28,5 @@ python scramble4gpu.py
 ```shell
 git clone https://github.com/ilikewind/scramble4gpu.git
 cd scramble4gpu
-python scramble4gpu.py -p 0.9 -n 4 -t 10000
+python scramble4gpu.py -p 0.9 -n 4 -t 1000
 ```
