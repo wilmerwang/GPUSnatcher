@@ -28,7 +28,6 @@ python scramble4gpu.py
 当想自己设置以上参数的时候：
 
 ```shell
-git clone https://github.com/ilikewind/scramble4gpu.git
-cd scramble4gpu
-python scramble4gpu.py -p 0.9 -n 4 -t 1000
+# 查找Free显存大于0.9的显卡，抢占4个，1800秒后自动释放
+python scramble4gpu.py -p 0.9 -n 4 -t 1800
 ```
