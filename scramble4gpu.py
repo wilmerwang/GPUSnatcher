@@ -2,6 +2,8 @@
 import os
 import time
 import argparse
+import _thread
+import random
 
 import numpy as np
 try:
@@ -47,18 +49,17 @@ class GPUManager(object):
     def __init__(self, args):
         self._args = args
 
-    def choose_free_gpu(self, num=1):
+    def choose_free_gpu(self):
         qresult, qindex = query_gpu()
         qresult = qresult.astype('int')
 
-        if qresult.shape[0] < num:
-            print('The number GPU {} < num {}'.format(len(qresult), num))
+        if qresult.shape[0] == 0:
+            print('No GPU, Check it.')
         else:
             qresult_sort_index = np.argsort(-qresult[:, 1])
-            idex = [i for i in qresult_sort_index[:num] if qresult[i][1]/qresult[i][2] > self._args.proportion]
+            idex = [i for i in qresult_sort_index if qresult[i][1]/qresult[i][2] > self._args.proportion]
             gpus_index = qresult[:, 0][idex]
             gpus_memory = qresult[:, 1][idex]
-
             return gpus_index, gpus_memory
 
 
@@ -66,36 +67,44 @@ def compute_storage_size(memory):
     return pow(memory * 1024 * 1024 / 8, 1/3) * 0.9
 
 
-# if __name__ == '__main__':
-def main():
-    args = set_parser()
+def worker(gpus_id, size):
+    try:
+        a = torch.zeros([size, size, size], dtype=torch.double, device=gpus_id)
+        while True:
+            torch.mul(a[0], a[0])
+            if random.random() > 0.5:
+                time.sleep(0.0000001)
+    except:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpus_id)
+        a = tf.zeros([size, size, size], dtype=tf.dtypes.float64)
+        while True:
+            tf.matmul(a[0], a[0])
+            if random.random() > 0.5:
+                time.sleep(0.0000001)
 
+def main(args, ids):
     gpu_manager = GPUManager(args)
-    gpus_free, gpus_memory = gpu_manager.choose_free_gpu(num=args.gpu_nums)
+    gpus_free, gpus_memory = gpu_manager.choose_free_gpu()
 
-    sizes = [int(compute_storage_size(i)) for i in gpus_memory]
-
-    if len(gpus_free) > 0:
-        ids = []
-        for gpus_id, size in zip(gpus_free, sizes):
-            print("Scramble GPU {}".format(gpus_id))
-            try:
-                torch.zeros([size, size, size], dtype=torch.double, device=gpus_id)
-            except:
-                # with tf.device('/gpu:{}'.format(gpus_id)):
-                os.environ["CUDA_VISIBLE_DEVICES"] = str(gpus_id)
-                tf.zeros([size, size, size], dtype=tf.dtypes.float64)
-            ids.append(gpus_id)
-        time.sleep(args.times)
-
-        return ids
-
+    if len(gpus_free) == 0:
+        # print('No free GPUs, waiting for someone else to release.')
+        pass 
     else:
-        return 
+        sca_nums = args.gpu_nums - len(ids) 
+        if sca_nums > 0:
+            sizes = [int(compute_storage_size(i)) for i in gpus_memory]
+            for gpus_id, size in zip(gpus_free[:sca_nums], sizes[:sca_nums]):
+                ids.append(gpus_id)
+                print("Scramble GPU {}".format(gpus_id))
+                _thread.start_new_thread(worker, (gpus_id, size))
+                time.sleep(30)
 
 
 if __name__ == '__main__':
+    ids = []
+    args = set_parser()
     while True:
-        ids = main()
-        if len(ids) != 0:
+        main(args, ids)
+        if len(ids) >= args.gpu_nums:
+            time.sleep(args.times)
             break
