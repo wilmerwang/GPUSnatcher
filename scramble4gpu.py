@@ -8,7 +8,6 @@ import json
 import socket
 from smtplib import SMTP_SSL
 from email.mime.text import MIMEText
-from email.header import Header
 
 import numpy as np
 try:
