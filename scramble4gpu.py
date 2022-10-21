@@ -4,6 +4,11 @@ import time
 import argparse
 import _thread
 import random
+import json
+import socket
+from smtplib import SMTP_SSL
+from email.mime.text import MIMEText
+from email.header import Header
 
 import numpy as np
 try:
@@ -17,12 +22,14 @@ except ImportError:
 
 def set_parser():
     parser = argparse.ArgumentParser(description='..')
-    parser.add_argument('-p', '--proportion', type=float, default=0.8, 
-        help='The ratio of gpu free memory to total memory')
+    parser.add_argument('-p', '--proportion', type=float, default=0.8,
+                        help='The ratio of gpu free memory to total memory')
     parser.add_argument('-n', '--gpu_nums', type=int, default=1,
-        help='The numbers of GPU to scramble')
+                        help='The numbers of GPU to scramble')
     parser.add_argument('-t', '--times', type=int, default=1800,
-        help='Sleep time if scramble gpu')
+                        help='Sleep time if scramble gpu')
+    parser.add_argument('-e', '--email_conf', type=str, default='./email_conf.json',
+                        help='The path to email config')
     args = parser.parse_args()
 
     return args
@@ -74,7 +81,7 @@ def worker(gpus_id, size):
             torch.mul(a[0], a[0])
             if random.random() > 0.5:
                 time.sleep(0.0000001)
-    except:
+    except Exception:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpus_id)
         a = tf.zeros([size, size, size], dtype=tf.dtypes.float64)
         while True:
@@ -82,15 +89,48 @@ def worker(gpus_id, size):
             if random.random() > 0.5:
                 time.sleep(0.0000001)
 
+
+class EmailSender(object):
+    def __init__(self, host_server, user, pwd, sender):
+        self.host_server = host_server
+        self.user = user
+        self.pwd = pwd
+        self.sender = sender
+
+    def send_email(self, receiver, subject, content):
+        receiver = [receiver] if isinstance(receiver, str) else receiver
+        message = MIMEText(content, 'plain', 'utf-8')
+        message['Subject'] = subject
+        message['From'] = self.sender
+        message['To'] = ", ".join(receiver)
+
+        try:
+            smtp_obj = SMTP_SSL(self.host_server)
+            smtp_obj.ehlo(self.host_server)
+            smtp_obj.login(self.user, self.pwd)
+            smtp_obj.sendmail(self.sender, receiver, message.as_string())
+            smtp_obj.quit()
+            print("The mail was sent successfully.")
+        except Exception as e:
+            print(e)
+
+
 def main(args, ids):
+    with open(args.email_conf, "r") as f:
+        email_conf = json.load(f)
+    email_sender = EmailSender(email_conf['host'],
+                               email_conf['user'],
+                               email_conf['pwd'],
+                               email_conf['sender'])
+
     gpu_manager = GPUManager(args)
     gpus_free, gpus_memory = gpu_manager.choose_free_gpu()
 
     if len(gpus_free) == 0:
         # print('No free GPUs, waiting for someone else to release.')
-        pass 
+        pass
     else:
-        sca_nums = args.gpu_nums - len(ids) 
+        sca_nums = args.gpu_nums - len(ids)
         if sca_nums > 0:
             sizes = [int(compute_storage_size(i)) for i in gpus_memory]
             for gpus_id, size in zip(gpus_free[:sca_nums], sizes[:sca_nums]):
@@ -98,6 +138,12 @@ def main(args, ids):
                 print("Scramble GPU {}".format(gpus_id))
                 _thread.start_new_thread(worker, (gpus_id, size))
                 time.sleep(30)
+
+            hostname = socket.gethostname()
+            gpu_ids = ', '.join(gpus_free[:sca_nums].astype('str'))
+            subject = f"{hostname}: GPU {gpu_ids} has been scrambled"
+            content = f"{hostname}: GPU {gpu_ids} has been scrambled, and will be released in {args.times//60} minutes!"
+            email_sender.send_email(email_conf['receiver'], subject, content)
 
 
 if __name__ == '__main__':
