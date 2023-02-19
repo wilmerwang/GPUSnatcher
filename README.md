@@ -1,6 +1,6 @@
-# scramble4gpu
+# GPUSnatcher
 
-scramble4gpu是用来在抢占显卡的脚本，主要是在实验室显卡资源紧张且自己亟需使用显卡的情况下，使用该脚本自动抢占一个或多个显卡。
+GPUSnatcher是用来在抢占显卡的脚本，主要是在实验室显卡资源紧张且自己亟需使用显卡的情况下，使用该脚本自动抢占一个或多个显卡。
 
 **建议将scramble4gpu.py更改为train.py，并设置仅自己可见，防止被打...**
 **请勿恶意抢占!!**
@@ -14,8 +14,8 @@ scramble4gpu是用来在抢占显卡的脚本，主要是在实验室显卡资�
 
 - **请先配置Email，否则当抢占GPU之后，不能发送Email**
 ```
-git clone https://github.com/ilikewind/scramble4gpu.git
-cd scramble4gpu
+git clone https://github.com/wilmerwang/GPUSnatcher.git
+cd GPUSnatcher
 
 # ./email_conf.json
 {
