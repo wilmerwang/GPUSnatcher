@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 import time
 import argparse
 import _thread
@@ -17,7 +18,9 @@ except ImportError:
     try:
         import tensorflow as tf
     except ImportError:
-        print("No pytorch and tensorflow module")
+        print("No pytorch and tensorflow module, please install one of these!")
+        sys.exit()
+    
 
 
 def set_parser():
