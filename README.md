@@ -18,6 +18,7 @@ git clone https://github.com/wilmerwang/GPUSnatcher.git
 cd GPUSnatcher
 
 # ./email_conf.json
+# 建议使用qq邮箱服务,如果用的其他邮箱服务器，请自行设置
 {
   "host": "smtp.qq.com",  # qq邮箱server
   "user": "2xxxxxxx6@qq.com",  # 要登陆的qq账号
@@ -36,7 +37,7 @@ python scramble4gpu.py
 
 - -p --proportion 显卡空闲内存 / 全部内存 的阈值，取值在0-1之间。当p取1的时候，表示仅仅列出完全没有被使用的显卡。默认为0.8。
 - -n --gpu_nums 需要抢占的GPU数量，建议不要抢太多，容易挨揍。默认是1。
-- -t --times 抢占显卡之后，自动释放显卡的时间。默认是1小时。
+- -t --times 抢占显卡之后，自动释放显卡的时间。默认是30分钟。
 - -e --email_conf email的配置参数，默认在./email_conf.json
 
 当想自己设置以上参数的时候：

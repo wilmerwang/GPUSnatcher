@@ -8,6 +8,7 @@ import json
 import socket
 from smtplib import SMTP_SSL
 from email.mime.text import MIMEText
+from email.utils import formataddr
 
 import numpy as np
 try:
@@ -100,7 +101,7 @@ class EmailSender(object):
         receiver = [receiver] if isinstance(receiver, str) else receiver
         message = MIMEText(content, 'plain', 'utf-8')
         message['Subject'] = subject
-        message['From'] = self.sender
+        message['From'] = formataddr(("GPUSnatcher", self.sender))
         message['To'] = ", ".join(receiver)
 
         try:
