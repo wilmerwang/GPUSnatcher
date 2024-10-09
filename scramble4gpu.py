@@ -3,8 +3,8 @@ import os
 import sys
 import time
 import argparse
-import _thread
 import random
+import multiprocessing
 import json
 import socket
 from smtplib import SMTP_SSL
@@ -49,7 +49,7 @@ def parse(qargs, results):
 
 def query_gpu():
     qargs = ['index', 'memory.free', 'memory.total']
-    cmd = 'nvidia-smi --query-gpu={} --format=csv, noheader'.format(','.join(qargs))
+    cmd = 'nvidia-smi --query-gpu={} --format=csv,noheader'.format(','.join(qargs))
     results = os.popen(cmd).readlines()
 
     return parse(qargs, results), results[0].strip()
@@ -82,15 +82,15 @@ def worker(gpus_id, size):
         a = torch.zeros([size, size, size], dtype=torch.double, device=gpus_id)
         while True:
             torch.mul(a[0], a[0])
-            if random.random() > 0.5:
-                time.sleep(0.0000001)
+#            if random.random() > 0.8:
+#                time.sleep(1e-9)
     except Exception:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpus_id)
         a = tf.zeros([size, size, size], dtype=tf.dtypes.float64)
         while True:
             tf.matmul(a[0], a[0])
-            if random.random() > 0.5:
-                time.sleep(0.0000001)
+            if random.random() > 0.8:
+                time.sleep(1e-9)
 
 
 class EmailSender(object):
@@ -127,33 +127,49 @@ def main(args, ids):
                                email_conf['sender'])
 
     gpu_manager = GPUManager(args)
-    gpus_free, gpus_memory = gpu_manager.choose_free_gpu()
+    processes = []
+    
+    try:
+        while True:
+            gpus_free, gpus_memory = gpu_manager.choose_free_gpu()
 
-    if len(gpus_free) == 0:
-        # print('No free GPUs, waiting for someone else to release.')
-        pass
-    else:
-        sca_nums = args.gpu_nums - len(ids)
-        if sca_nums > 0:
-            sizes = [int(compute_storage_size(i)) for i in gpus_memory]
-            for gpus_id, size in zip(gpus_free[:sca_nums], sizes[:sca_nums]):
-                ids.append(gpus_id)
-                print("Scramble GPU {}".format(gpus_id))
-                _thread.start_new_thread(worker, (gpus_id, size))
-                time.sleep(30)
+            if len(gpus_free) == 0:
+                pass
+            else:
+                sca_nums = args.gpu_nums - len(processes)
+                if sca_nums > 0:
 
-            hostname = socket.gethostname()
-            gpu_ids = ', '.join(gpus_free[:sca_nums].astype('str'))
-            subject = f"{hostname}: GPU {gpu_ids} has been scrambled"
-            content = f"{hostname}: GPU {gpu_ids} has been scrambled, and will be released in {args.times//60} minutes!"
-            email_sender.send_email(email_conf['receiver'], subject, content)
+                    sizes = [int(compute_storage_size(i)) for i in gpus_memory]
+                    for gpus_id, size in zip(gpus_free[:sca_nums], sizes[:sca_nums]):
+                        ids.append(gpus_id)
+                        print("Scramble GPU {}".format(gpus_id))
+                        p = multiprocessing.Process(target=worker, args=(gpus_id, size))
+                        p.start()
+                        processes.append(p)
+                        time.sleep(5)
+                
+                hostname = socket.gethostname()
+                gpu_ids = ', '.join(gpus_free[:sca_nums].astype('str'))
+                subject = f"{hostname}: GPU {gpu_ids} has been scrambled"
+                content = f"{hostname}: GPU {gpu_ids} has been scrambled, and will be released in {args.times//60} minutes!"
+                email_sender.send_email(email_conf['receiver'], subject, content)
+            
+            if len(ids) >= args.gpu_nums:
+                time.sleep(args.times)
+                break
+
+    except Exception as e:
+        print(e)
+
+    finally:
+        for p in processes:
+            if p.is_alive():
+                p.terminate()
+        for p in processes:
+             p.join()
 
 
 if __name__ == '__main__':
     ids = []
     args = set_parser()
-    while True:
-        main(args, ids)
-        if len(ids) >= args.gpu_nums:
-            time.sleep(args.times)
-            break
+    main(args, ids)
