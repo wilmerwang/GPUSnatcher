@@ -82,15 +82,11 @@ def worker(gpus_id, size):
         a = torch.zeros([size, size, size], dtype=torch.double, device=gpus_id)
         while True:
             torch.mul(a[0], a[0])
-#            if random.random() > 0.8:
-#                time.sleep(1e-9)
     except Exception:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpus_id)
         a = tf.zeros([size, size, size], dtype=tf.dtypes.float64)
         while True:
             tf.matmul(a[0], a[0])
-            if random.random() > 0.8:
-                time.sleep(1e-9)
 
 
 class EmailSender(object):
