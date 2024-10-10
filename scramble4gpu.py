@@ -153,6 +153,7 @@ def main(args, ids):
             if len(ids) >= args.gpu_nums:
                 time.sleep(args.times)
                 break
+            time.sleep(60)
 
     except Exception as e:
         print(e)
