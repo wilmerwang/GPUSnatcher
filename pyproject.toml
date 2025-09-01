@@ -1,6 +1,6 @@
 [project]
 name = "GPUSnatcher"
-version = "1.2.1"
+version = "1.2.2"
 description = "A tool to find and snatch free GPUs on a shared server."
 readme = "README.md"
 requires-python = ">=3.12"
