@@ -51,8 +51,8 @@ class ConfigManager:
         while True:
             config, fields_list = self.pad_config()
             console.print(config)
-            choice = console.input("Do you want to keep this configuration? ([y/yes]/n): ").strip().lower()
-            if choice in ["y", "yes", ""]:
+            choice = console.input("Do you want to keep this configuration? (y/n): ").strip().lower()
+            if choice in ["y", ""]:
                 break
             user_input = console.input("Enter the index of key to update (comma-separated): ").strip()
             selection_indices = [int(x) for x in user_input.split(",") if x.isdigit()]
@@ -76,15 +76,20 @@ class ConfigManager:
         for k in keys_to_update:
             current_value = getattr(self.config, k)
             if k in ["gpu_nums", "gpu_times_min"]:
-                new_value = prompt.ask(f"Please enter the {k}:", default=str(current_value or ""))
+                new_value = prompt.ask(f"Please enter the {k}: ", default=str(current_value or ""))
                 setattr(self.config, k, int(new_value))
             elif k == "email_receivers":
                 new_value = prompt.ask(
-                    f"Please enter the {k} (comma-separated):", default=",".join(current_value or [])
+                    f"Please enter the {k} (comma-separated): ",
+                    default=",".join(current_value or []),
                 )
                 setattr(self.config, k, [email.strip() for email in new_value.split(",") if email.strip()])
+            elif k == "email_pwd":
+                current_value = "*" * 8
+                new_value = prompt.ask(f"Please enter the {k}: ", default=str(current_value or ""), password=True)
+                setattr(self.config, k, new_value)
             else:
-                new_value = prompt.ask(f"Please enter the {k}:", default=str(current_value or ""))
+                new_value = prompt.ask(f"Please enter the {k}: ", default=str(current_value or ""))
                 setattr(self.config, k, new_value)
 
         return self.config
