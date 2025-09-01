@@ -25,18 +25,18 @@ cpu = [
 conflicts = [
   [
     { extra = "cpu" },
-    { extra = "gpu" },
+    { extra = "cuda129" },
   ],
 ]
 
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cuda", extra = "cuda129" },
+  { index = "pytorch-cuda129", extra = "cuda129" },
   { index = "pytorch-cpu", extra = "cpu" },
 ]
 
 [[tool.uv.index]]
-name = "pytorch-cuda"
+name = "pytorch-cuda129"
 url = "https://download.pytorch.org/whl/cu129"
 explicit = true
 
