@@ -28,10 +28,10 @@ jobs:
       - name: build project
         run: uv build
 
-      # - name: publish project
-      #   env:
-      #     UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
-      #   run: uv publish
+      - name: publish project
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+        run: uv publish
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
