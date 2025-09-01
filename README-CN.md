@@ -15,16 +15,16 @@ GPUSnatcher 是一个用于 GPU 资源监控和掠夺的工具，旨在帮助用
 
 ```
 # 不包含 pytorch 依赖
-pip install GPUSnatcher
+pip install gpusnatcher
 
 # 包含 pytorch 依赖
-pip install GPUSnatcher[cuda129]
+pip install gpusnatcher[cuda129]
 ```
 
 本地安装：
 
 ```
-git clone https://github.com/yourusername/GPUSnatcher.git
+git clone https://github.com/wilmerwang/GPUSnatcher.git
 cd GPUSnatcher
 
 # 不包含 pytorch 依赖

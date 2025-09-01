@@ -15,16 +15,16 @@ GPUSnatcher is a tool for GPU resource monitoring and snatching, designed to hel
 
 ```
 # Without pytorch
-pip install GPUSnatcher
+pip install gpusnatcher
 
 # with pytorch
-pip install GPUSnatcher[cuda129]
+pip install gpusnatcher[cuda129]
 ```
 
 Local installation：
 
 ```
-git clone https://github.com/yourusername/GPUSnatcher.git
+git clone https://github.com/wilmerwang/GPUSnatcher.git
 cd GPUSnatcher
 
 # Without pytorch
