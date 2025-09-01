@@ -128,6 +128,8 @@ class ConfigManager:
 
         for i, field_name in enumerate(fields_list):
             current_value = getattr(self.config, field_name)
+            if field_name == "email_pwd":
+                current_value = "*" * 8
             if isinstance(current_value, list):
                 current_value = ", ".join(current_value)
             table.add_row(str(i), field_name, str(current_value))

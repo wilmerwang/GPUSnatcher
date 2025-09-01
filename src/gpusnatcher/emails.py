@@ -1,6 +1,6 @@
 from email.mime.text import MIMEText
 from email.utils import formataddr
-from smtplib import SMTP_SSL
+from smtplib import SMTP_SSL, SMTPResponseException
 
 from gpusnatcher.logger import console
 
@@ -39,5 +39,11 @@ class EmailManager:
             with SMTP_SSL(self.host_server) as smtp:
                 smtp.login(self.user, self.pwd)
                 smtp.send_message(msg)
+        except SMTPResponseException as e:
+            if e.smtp_code == -1:
+                pass
+            else:
+                raise
         except Exception as e:
-            console.print_exception(f"Error sending email {subject}: {e}")
+            console.print(f"[red]Failed to send email: {e}[/red]")
+            console.print_exception()

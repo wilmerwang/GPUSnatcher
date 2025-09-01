@@ -62,9 +62,7 @@ class GPUManager:
         if gpus is None:
             return []
 
-        gpus = [gpu for gpu in gpus if gpu["index"] not in self.snatched_gpus]
-
-        return [gpu for gpu in gpus if gpu["memory.free"] / gpu["memory.total"] > 0.90]
+        return [gpu for gpu in gpus if gpu["memory.free"] / gpu["memory.total"] > 0.10]
 
     def get_num_gpus(self, num_gpus: int) -> int:
         """Get the number of GPUs to use."""
