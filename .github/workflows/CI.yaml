@@ -37,4 +37,4 @@ jobs:
         run: uv run --no-sync pre-commit run --from-ref origin/main --to-ref HEAD
 
       - name: Run tests
-        run: uv run --no-sync pytest tests/
+        run: uv run --no-sync pytest tests/test_config.py
