@@ -1,5 +1,7 @@
 import argparse
 import multiprocessing
+import secrets
+import time
 
 import torch
 
@@ -22,7 +24,10 @@ def worker(idx: int, free_mem: int) -> None:
     size = compute_storage_size(free_mem, dtype="float32", len_shape=3)
     tmp = torch.zeros(size, dtype=torch.float32, device=f"cuda:{idx}")
     while True:
-        torch.mul(tmp[0], tmp[-1])
+        do = torch.mul(tmp[0], tmp[-1])
+        do += 1
+        if secrets.randbelow(1000) < 5:
+            time.sleep(0.001)
 
 
 def main() -> None:
