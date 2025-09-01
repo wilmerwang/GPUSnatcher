@@ -1,6 +1,5 @@
 import argparse
 import multiprocessing
-import time
 
 import torch
 
@@ -8,7 +7,7 @@ from gpusnatcher.configs import ConfigData, ConfigManager
 from gpusnatcher.emails import EmailManager
 from gpusnatcher.gpu import GPUManager
 from gpusnatcher.logger import console
-from gpusnatcher.utils import compute_storage_size
+from gpusnatcher.utils import compute_storage_size, countdown_timer
 
 
 def set_args() -> argparse.Namespace:
@@ -92,7 +91,7 @@ def main() -> None:
             f"releasing in {config.gpu_times_min} minutes."
         )
 
-        time.sleep(config.gpu_times_min * 60)
+        countdown_timer(config.gpu_times_min, description="Releasing GPUs...")
 
     finally:
         console.print("[red]Cleaning up GPU workers...[/red]")
