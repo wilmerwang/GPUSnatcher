@@ -48,6 +48,9 @@ test = [
     "pytest-mock>=3.14.1",
 ]
 
+[project.scripts]
+gpusk = "gpusnatcher.main:main"
+
 [tool.ruff]
 line-length = 120
 

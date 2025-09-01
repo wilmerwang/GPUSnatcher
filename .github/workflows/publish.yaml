@@ -1,0 +1,43 @@
+name: Publish & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+          cache-local-path: "~/.cache/uv"
+          ignore-nothing-to-cache: true
+
+      - name: Install the project
+        run: uv sync --group dev
+
+      - name: build project
+        run: uv build
+
+      # - name: publish project
+      #   env:
+      #     UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+      #   run: uv publish
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GT_TOKEN }}
