@@ -3,7 +3,7 @@ name: Publish & Release
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
 
 jobs:
   publish:
@@ -34,10 +34,4 @@ jobs:
       #   run: uv publish
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body_path: CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GT_TOKEN }}
+        uses: softprops/action-gh-release@v2
