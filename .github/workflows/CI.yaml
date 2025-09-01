@@ -1,0 +1,40 @@
+name: Pre-commit hooks
+
+on: [push, pull_request]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+          cache-local-path: "~/.cache/uv"
+          ignore-nothing-to-cache: true
+
+      - name: Install the project
+        run: uv sync --group dev --extra cpu
+
+      - name: Install pre-commit hooks
+        run: uv run --no-sync pre-commit install
+
+      - name: Run pre-commit on all files
+        run: uv run --no-sync pre-commit run --from-ref origin/main --to-ref HEAD
+
+      - name: Run tests
+        run: uv run --no-sync pytest tests/

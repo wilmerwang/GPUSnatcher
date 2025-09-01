@@ -13,6 +13,7 @@ GPUSnatcher是用来在抢占显卡的脚本，主要是在实验室显卡资源
 ## 使用
 
 - **请先配置Email，否则当抢占GPU之后，不能发送Email**
+
 ```
 git clone https://github.com/wilmerwang/GPUSnatcher.git
 cd GPUSnatcher
@@ -29,6 +30,7 @@ cd GPUSnatcher
 ```
 
 - 配置之后运行程序
+
 ```shell
 python scramble4gpu.py
 ```
