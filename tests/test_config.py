@@ -51,6 +51,7 @@ def test_update_config(config_manager_with_path: ConfigManager, mocker: MockerFi
         side_effect=[
             "2",  # gpu_nums
             "20",  # gpu_times_min
+            "0.9",  # gpu_free_memory_ratio_threshold
             "smtp.new.com",  # email_host
             "newuser",  # email_user
             "newpwd",  # email_pwd
@@ -65,6 +66,7 @@ def test_update_config(config_manager_with_path: ConfigManager, mocker: MockerFi
 
     assert updated_config.gpu_nums == 2
     assert updated_config.gpu_times_min == 20
+    assert updated_config.gpu_free_memory_ratio_threshold == 0.9
     assert updated_config.email_host == "smtp.new.com"
     assert updated_config.email_user == "newuser"
     assert updated_config.email_pwd == "newpwd"  # noqa: S105

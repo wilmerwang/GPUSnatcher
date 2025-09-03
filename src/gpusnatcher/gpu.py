@@ -43,14 +43,16 @@ def get_gpu_count() -> int:
 class GPUManager:
     """A class to manage GPU selection based on memory availability."""
 
-    def __init__(self, num_gpus: int) -> None:
+    def __init__(self, num_gpus: int, gpu_free_memory_ratio_threshold: float = 0.85) -> None:
         """Initialize the GPU manager.
 
         Args:
             num_gpus (int): The number of GPUs to manage.
+            gpu_free_memory_ratio_threshold (float): The threshold for the free memory ratio to consider a GPU as free.
         """
         self.num_gpus = self.get_num_gpus(num_gpus)
         self.num_snatched_gpus: int = 0
+        self.gpu_free_memory_ratio_threshold = gpu_free_memory_ratio_threshold
 
     def get_free_gpus(self) -> list[dict[str, int] | None]:
         """Get a list of free GPUs.
@@ -62,7 +64,7 @@ class GPUManager:
         if gpus is None:
             return []
 
-        return [gpu for gpu in gpus if gpu["memory.free"] / gpu["memory.total"] > 0.85]
+        return [gpu for gpu in gpus if gpu["memory.free"] / gpu["memory.total"] > self.gpu_free_memory_ratio_threshold]
 
     def get_num_gpus(self, num_gpus: int) -> int:
         """Get the number of GPUs to use."""

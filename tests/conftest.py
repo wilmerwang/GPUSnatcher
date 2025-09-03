@@ -24,6 +24,7 @@ def config_data() -> ConfigData:
     return ConfigData(
         gpu_nums=1,
         gpu_times_min=10,
+        gpu_free_memory_ratio_threshold=0.85,
         email_host="smtp.example.com",
         email_user="user@example.com",
         email_pwd="password",  # noqa: S106

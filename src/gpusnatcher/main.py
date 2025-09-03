@@ -2,6 +2,7 @@ import argparse
 import multiprocessing
 import secrets
 import time
+from typing import Any
 
 import torch
 
@@ -19,14 +20,20 @@ def set_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def worker(idx: int, free_mem: int) -> None:
+def worker(idx: int, free_mem: int, ready_event: Any) -> None:
     """Worker function to process GPU tasks."""
-    size = compute_storage_size(free_mem, dtype="float32", len_shape=3)
-    tmp = torch.zeros(size, dtype=torch.float32, device=f"cuda:{idx}")
+    try:
+        size = compute_storage_size(free_mem, dtype="float32", len_shape=3)
+        tmp = torch.zeros(size, dtype=torch.float32, device=f"cuda:{idx}")
+        ready_event.set()
+    except Exception as e:
+        console.print(f"[red]Failed to allocate memory on GPU {idx}: {e}[/red]")
+        return
+
     while True:
-        tmp[0] = torch.mul(tmp[0], tmp[-1])
-        if secrets.randbelow(1000) < 5:
-            time.sleep(0.001)
+        tmp.mul_(tmp)
+        if secrets.randbelow(100) < 50:
+            time.sleep(1)
 
 
 def main() -> None:
@@ -39,7 +46,11 @@ def main() -> None:
 
     config: ConfigData = config_manager.config
 
-    gpu_manager = GPUManager(num_gpus=config.gpu_nums)
+    gpu_manager = GPUManager(
+        num_gpus=config.gpu_nums,
+        gpu_free_memory_ratio_threshold=config.gpu_free_memory_ratio_threshold,
+    )
+
     email_manager = EmailManager(
         host_server=config.email_host,
         user=config.email_user,
@@ -62,19 +73,25 @@ def main() -> None:
                 continue
 
             for gpu in free_gpus_needed:
+                ready_event = multiprocessing.Event()
                 p = multiprocessing.Process(
                     target=worker,
                     args=(
                         gpu["index"],
                         gpu["memory.free"],
+                        ready_event,
                     ),
                 )
                 p.start()
-                processes.append(p)
-                console.print(f"Started GPU worker for GPU {gpu['index']}")
 
-            alive_gpus = [p.is_alive() for p in processes]
-            gpu_manager.set_num_snatched_gpus(len(alive_gpus))
+                if ready_event.wait(timeout=60):
+                    processes.append(p)
+                    console.print(f"Started GPU worker for GPU {gpu['index']}")
+                else:
+                    console.print(f"[red]GPU worker for GPU {gpu['index']} failed to start.[/red]")
+
+            processes = [p for p in processes if p.is_alive()]
+            gpu_manager.set_num_snatched_gpus(len(processes))
 
             email_manager.send_email(
                 subject=f"GPUSnatcher: Snatched GPU {[gpu['index'] for gpu in free_gpus_needed]}",
