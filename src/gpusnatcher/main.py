@@ -26,14 +26,17 @@ def worker(idx: int, free_mem: int, ready_event: Any) -> None:
         size = compute_storage_size(free_mem, dtype="float32", len_shape=3)
         tmp = torch.zeros(size, dtype=torch.float32, device=f"cuda:{idx}")
         ready_event.set()
-    except Exception as e:
-        console.print(f"[red]Failed to allocate memory on GPU {idx}: {e}[/red]")
-        return
 
-    while True:
-        tmp.mul_(tmp)
-        if secrets.randbelow(100) < 50:
-            time.sleep(1)
+        while True:
+            tmp.mul_(tmp)
+            if secrets.randbelow(100) < 50:
+                time.sleep(1)
+
+    except KeyboardInterrupt:
+        return
+    except Exception as e:
+        console.log(f"[red]Failed to allocate memory on GPU {idx}: {e}[/red]")
+        return
 
 
 def notify_gpu_snatch(
@@ -61,7 +64,7 @@ def notify_gpu_snatch(
         body = f"Successfully snatched GPU [{gpu_list_str}]. Now total: {snatched}/{total}"
 
     email_mgr.send_email(subject=subject, body=body)
-    console.print(f"Sent {'final ' if final else ''}email notification for GPU [{gpu_list_str}]")
+    console.log(f"Sent {'final ' if final else ''}email notification for GPU [{gpu_list_str}]")
 
 
 def main() -> None:
@@ -90,41 +93,39 @@ def main() -> None:
     processes = []
 
     try:
-        while True:
-            if gpu_manager.num_snatched_gpus >= gpu_manager.num_gpus:
-                break
+        with console.status("[green]Snatching GPUs...[/green]"):
+            while gpu_manager.num_snatched_gpus < gpu_manager.num_gpus:
+                num_gpus_needed = gpu_manager.get_num_gpus_needed()
+                free_gpus_needed = gpu_manager.get_free_gpus()[:num_gpus_needed]
 
-            num_gpus_needed = gpu_manager.get_num_gpus_needed()
-            free_gpus_needed = gpu_manager.get_free_gpus()[:num_gpus_needed]
+                if not free_gpus_needed:
+                    continue
 
-            if not free_gpus_needed:
-                continue
+                successful_gpus_index = []
+                for gpu in free_gpus_needed:
+                    ready_event = multiprocessing.Event()
+                    p = multiprocessing.Process(
+                        target=worker,
+                        args=(
+                            gpu["index"],
+                            gpu["memory.free"],
+                            ready_event,
+                        ),
+                    )
+                    p.start()
 
-            successful_gpus = []
-            for gpu in free_gpus_needed:
-                ready_event = multiprocessing.Event()
-                p = multiprocessing.Process(
-                    target=worker,
-                    args=(
-                        gpu["index"],
-                        gpu["memory.free"],
-                        ready_event,
-                    ),
+                    if ready_event.wait(timeout=60):
+                        processes.append(p)
+                        successful_gpus_index.append(gpu["index"])
+                        console.log(f"Started GPU worker for GPU {gpu['index']}")
+                    else:
+                        console.log(f"[red]GPU worker for GPU {gpu['index']} failed to start.[/red]")
+
+                gpu_manager.snatched_gpus.extend(successful_gpus_index)
+
+                notify_gpu_snatch(
+                    email_manager, successful_gpus_index, gpu_manager.num_snatched_gpus, gpu_manager.num_gpus
                 )
-                p.start()
-
-                if ready_event.wait(timeout=60):
-                    processes.append(p)
-                    successful_gpus.append(gpu["index"])
-                    console.print(f"Started GPU worker for GPU {gpu['index']}")
-                else:
-                    console.print(f"[red]GPU worker for GPU {gpu['index']} failed to start.[/red]")
-
-            gpu_manager.snatched_gpus.extend(successful_gpus)
-            processes = [p for p in processes if p.is_alive()]
-            gpu_manager.set_num_snatched_gpus(len(processes))
-
-            notify_gpu_snatch(email_manager, successful_gpus, gpu_manager.num_snatched_gpus, gpu_manager.num_gpus)
 
         notify_gpu_snatch(
             email_manager,
@@ -137,12 +138,14 @@ def main() -> None:
 
         countdown_timer(config.gpu_times_min, description="Releasing GPUs...")
 
+    except KeyboardInterrupt:
+        console.log("[red]Interrupted by user. Cleaning up...[/red]")
     finally:
-        console.print("[red]Cleaning up GPU workers...[/red]")
+        console.log("[red]Cleaning up GPU workers...[/red]")
         for p in processes:
             p.terminate()
             p.join()
-        console.print("[green]All GPU workers terminated. Exiting.[/green]")
+        console.log("[green]All GPU workers terminated. Exiting.[/green]")
 
 
 if __name__ == "__main__":

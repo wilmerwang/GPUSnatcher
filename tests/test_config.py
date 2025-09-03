@@ -79,7 +79,7 @@ def test_confirm_config(config_manager_with_path: ConfigManager, mocker: MockerF
     config_manager_with_path.load_or_create()
     mocker.patch("gpusnatcher.configs.console.input", return_value="y")
     mocker.patch("gpusnatcher.configs.ConfigManager.save_config", return_value=None)
-    mocker.patch("gpusnatcher.configs.console.print", return_value=None)
+    mocker.patch("gpusnatcher.configs.console.log", return_value=None)
 
     config_manager_with_path.confirm_config()
     assert config_manager_with_path.config is not None
@@ -92,7 +92,7 @@ def test_confirm_config_update_then_keep(config_manager_with_path: ConfigManager
     inputs = iter(["n", "0,1", "y"])
     mocker.patch("gpusnatcher.configs.console.input", side_effect=lambda _: next(inputs))
     mocker.patch("gpusnatcher.configs.ConfigManager.save_config", return_value=None)
-    mocker.patch("gpusnatcher.configs.console.print", return_value=None)
+    mocker.patch("gpusnatcher.configs.console.log", return_value=None)
 
     def fake_update(keys: list[str] | str) -> ConfigData:
         cfg = config_manager_with_path.config

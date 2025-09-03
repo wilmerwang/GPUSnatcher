@@ -51,7 +51,7 @@ class ConfigManager:
         """Confirm the current configuration."""
         while True:
             config, fields_list = self.pad_config()
-            console.print(config)
+            console.log(config)
             choice = console.input("Do you want to keep this configuration? (y/n): ").strip().lower()
             if choice in ["y", ""]:
                 break

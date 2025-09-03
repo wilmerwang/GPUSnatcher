@@ -51,7 +51,6 @@ class GPUManager:
             gpu_free_memory_ratio_threshold (float): The threshold for the free memory ratio to consider a GPU as free.
         """
         self.num_gpus = self.get_num_gpus(num_gpus)
-        self.num_snatched_gpus: int = 0
         self.gpu_free_memory_ratio_threshold = gpu_free_memory_ratio_threshold
 
         self.snatched_gpus: list = []
@@ -78,9 +77,10 @@ class GPUManager:
             raise ValueError("num_gpus must be -1 or a non-negative integer.")
         return num_gpus
 
-    def set_num_snatched_gpus(self, num: int) -> None:
-        """Set the number of snatched GPUs."""
-        self.num_snatched_gpus = num
+    @property
+    def num_snatched_gpus(self) -> int:
+        """Get the number of snatched GPUs."""
+        return len(self.snatched_gpus)
 
     def get_num_gpus_needed(self) -> int:
         """Get the number of GPUs still needed to snatch.

@@ -36,8 +36,8 @@ def countdown_timer(minutes: int, description: str = "Waiting") -> None:
     with Live(console=console, refresh_per_second=10) as live:
         for remaining in range(total_seconds, 0, -1):
             mins, secs = divmod(remaining, 60)
-            spinner = Spinner("dots", text=f"{description} in {mins:02d}:{secs:02d}")
+            spinner = Spinner("dots", text=f"[green]{description} in {mins:02d}:{secs:02d}[/green]")
             live.update(spinner)
             time.sleep(1)
 
-    console.print(f"\n[bold green]{description} completed![/bold green]")
+    console.log(f"\n[green]{description} completed![/green]")

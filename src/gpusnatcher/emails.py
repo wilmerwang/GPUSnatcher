@@ -45,5 +45,5 @@ class EmailManager:
             else:
                 raise
         except Exception as e:
-            console.print(f"[red]Failed to send email: {e}[/red]")
-            console.print_exception()
+            console.log(f"[red]Failed to send email: {e}[/red]")
+            console.log()
