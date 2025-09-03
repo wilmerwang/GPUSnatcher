@@ -1,5 +1,11 @@
 [project]
 name = "GPUSnatcher"
+authors = [
+  {"name" = "Wilmer Wang", "email" = "wangwei0206@foxmail.com"}
+]
+maintainers = [
+  {"name" = "Wilmer Wang", "email" = "wangwei0206@foxmail.com"}
+]
 version = "1.4.0"
 description = "A tool to find and snatch free GPUs on a shared server."
 readme = "README.md"
@@ -8,6 +14,9 @@ dependencies = [
     "rich>=14.1.0",
     "tomli-w>=1.2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/wilmerwang/GPUSnatcher"
 
 [build-system]
 requires = ["uv_build>=0.8,<0.9"]
