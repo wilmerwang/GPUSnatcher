@@ -54,6 +54,8 @@ class GPUManager:
         self.num_snatched_gpus: int = 0
         self.gpu_free_memory_ratio_threshold = gpu_free_memory_ratio_threshold
 
+        self.snatched_gpus: list = []
+
     def get_free_gpus(self) -> list[dict[str, int] | None]:
         """Get a list of free GPUs.
 

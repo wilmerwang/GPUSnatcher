@@ -36,6 +36,34 @@ def worker(idx: int, free_mem: int, ready_event: Any) -> None:
             time.sleep(1)
 
 
+def notify_gpu_snatch(
+    email_mgr: EmailManager,
+    gpu_indices: list[int],
+    snatched: int,
+    total: int,
+    final: bool = False,
+    gpu_times_min: int = 1,
+) -> None:
+    """Notify about GPU snatching status."""
+    if not gpu_indices:
+        return
+
+    gpu_list_str = ", ".join(str(i) for i in gpu_indices)
+
+    if final:
+        subject = f"GPUSnatcher: Snatched {snatched}/{total} GPUs"
+        body = (
+            f"Successfully snatched GPU [{gpu_list_str}]\n"
+            f"These GPUs will be released automatically after {gpu_times_min} minutes."
+        )
+    else:
+        subject = f"GPUSnatcher: Snatched GPU [{gpu_list_str}]"
+        body = f"Successfully snatched GPU [{gpu_list_str}]. Now total: {snatched}/{total}"
+
+    email_mgr.send_email(subject=subject, body=body)
+    console.print(f"Sent {'final ' if final else ''}email notification for GPU [{gpu_list_str}]")
+
+
 def main() -> None:
     """The main entry point."""
     args = set_args()
@@ -72,6 +100,7 @@ def main() -> None:
             if not free_gpus_needed:
                 continue
 
+            successful_gpus = []
             for gpu in free_gpus_needed:
                 ready_event = multiprocessing.Event()
                 p = multiprocessing.Process(
@@ -86,30 +115,24 @@ def main() -> None:
 
                 if ready_event.wait(timeout=60):
                     processes.append(p)
+                    successful_gpus.append(gpu["index"])
                     console.print(f"Started GPU worker for GPU {gpu['index']}")
                 else:
                     console.print(f"[red]GPU worker for GPU {gpu['index']} failed to start.[/red]")
 
+            gpu_manager.snatched_gpus.extend(successful_gpus)
             processes = [p for p in processes if p.is_alive()]
             gpu_manager.set_num_snatched_gpus(len(processes))
 
-            email_manager.send_email(
-                subject=f"GPUSnatcher: Snatched GPU {[gpu['index'] for gpu in free_gpus_needed]}",
-                body=f"Successfully snatched GPU {gpu['index']}. "
-                f"Total: {gpu_manager.num_snatched_gpus}/{gpu_manager.num_gpus}",
-            )
-            console.print(f"Sent email notification for GPU {[gpu['index'] for gpu in free_gpus_needed]}")
+            notify_gpu_snatch(email_manager, successful_gpus, gpu_manager.num_snatched_gpus, gpu_manager.num_gpus)
 
-        email_manager.send_email(
-            subject=f"GPUSnatcher: Snatched {gpu_manager.num_snatched_gpus}/{gpu_manager.num_gpus} GPUs",
-            body=(
-                f"Currently snatched: {gpu_manager.num_snatched_gpus}/{gpu_manager.num_gpus}.\n"
-                f"These GPUs will be released automatically after {config.gpu_times_min} minutes."
-            ),
-        )
-        console.print(
-            f"Sent final email notification. Snatched {gpu_manager.num_snatched_gpus}/{gpu_manager.num_gpus} GPUs, "
-            f"releasing in {config.gpu_times_min} minutes."
+        notify_gpu_snatch(
+            email_manager,
+            gpu_manager.snatched_gpus,
+            gpu_manager.num_snatched_gpus,
+            gpu_manager.num_gpus,
+            final=True,
+            gpu_times_min=config.gpu_times_min,
         )
 
         countdown_timer(config.gpu_times_min, description="Releasing GPUs...")
