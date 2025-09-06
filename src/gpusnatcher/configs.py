@@ -15,6 +15,7 @@ class ConfigData:
     gpu_nums: int
     gpu_times_min: int
     gpu_free_memory_ratio_threshold: float
+    friendly_min: int
     email_host: str
     email_user: str
     email_pwd: str
@@ -76,7 +77,7 @@ class ConfigManager:
 
         for k in keys_to_update:
             current_value = getattr(self.config, k)
-            if k in ["gpu_nums", "gpu_times_min"]:
+            if k in ["gpu_nums", "gpu_times_min", "friendly_min"]:
                 new_value = prompt.ask(f"Please enter the {k}: ", default=str(current_value or ""))
                 setattr(self.config, k, int(new_value))
             elif k == "gpu_free_memory_ratio_threshold":
