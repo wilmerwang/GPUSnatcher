@@ -63,9 +63,10 @@ class GPUManager:
             list[dict[str, int] | None]: A list of dictionaries containing information about free GPUs.
         """
         gpus = query_gpu()
-        gpus = self.get_visible_gpus(gpus)
         if gpus is None:
             return []
+
+        gpus = self.get_visible_gpus(gpus)
 
         return [gpu for gpu in gpus if gpu["memory.free"] / gpu["memory.total"] > self.gpu_free_memory_ratio_threshold]
 
@@ -94,9 +95,6 @@ class GPUManager:
 
     def get_visible_gpus(self, gpus: list[dict[str, int]] | None) -> list[dict[str, int]] | None:
         """Filter GPUs based on the CUDA_VISIBLE_DEVICES environment variable."""
-        if gpus is None:
-            return None
-
         cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES")
         if cuda_visible is None:
             return gpus
