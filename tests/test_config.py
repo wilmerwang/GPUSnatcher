@@ -52,6 +52,7 @@ def test_update_config(config_manager_with_path: ConfigManager, mocker: MockerFi
             "2",  # gpu_nums
             "20",  # gpu_times_min
             "0.9",  # gpu_free_memory_ratio_threshold
+            "5",  # friendly_min
             "smtp.new.com",  # email_host
             "newuser",  # email_user
             "newpwd",  # email_pwd
