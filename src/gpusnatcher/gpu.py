@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 
@@ -62,6 +63,7 @@ class GPUManager:
             list[dict[str, int] | None]: A list of dictionaries containing information about free GPUs.
         """
         gpus = query_gpu()
+        gpus = self.get_visible_gpus(gpus)
         if gpus is None:
             return []
 
@@ -89,3 +91,14 @@ class GPUManager:
             int: Number of GPUs still needed.
         """
         return max(self.num_gpus - self.num_snatched_gpus, 0)
+
+    def get_visible_gpus(self, gpus: list[dict[str, int]] | None) -> list[dict[str, int]] | None:
+        """Filter GPUs based on the CUDA_VISIBLE_DEVICES environment variable."""
+        if gpus is None:
+            return None
+
+        cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES")
+        if cuda_visible is None:
+            return gpus
+
+        return [gpu for gpu in gpus if gpu["index"] in map(int, cuda_visible.split(","))]
