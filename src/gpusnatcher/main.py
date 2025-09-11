@@ -104,14 +104,14 @@ def main() -> None:
                 if not free_gpus_needed:
                     continue
 
-                countdown_timer(
-                    config.friendly_min,
-                    description=(
-                        "Be friendly... "
-                        "waiting before allocation to avoid OOM from previous job's final test/cleanup... "
-                    ),
-                    debug=args.debug,
-                )
+                # countdown_timer(
+                #     config.friendly_min,
+                #     description=(
+                #         "Be friendly... "
+                #         "waiting before allocation to avoid OOM from previous job's final test/cleanup... "
+                #     ),
+                #     debug=args.debug,
+                # )
                 successful_gpus_index = []
                 for gpu in free_gpus_needed:
                     ready_event = multiprocessing.Event()

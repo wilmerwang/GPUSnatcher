@@ -12,15 +12,15 @@ from gpusnatcher.logger import console, prompt
 class ConfigData:
     """Configuration data for GPU Snatcher."""
 
-    gpu_nums: int
-    gpu_times_min: int
-    gpu_free_memory_ratio_threshold: float
-    friendly_min: int
-    email_host: str
-    email_user: str
-    email_pwd: str
-    email_sender: str
-    email_receivers: list[str]
+    gpu_nums: int | None = None
+    gpu_times_min: int | None = None
+    gpu_free_memory_ratio_threshold: float | None = None
+    friendly_min: int | None = None
+    email_host: str | None = None
+    email_user: str | None = None
+    email_pwd: str | None = None
+    email_sender: str | None = None
+    email_receivers: list[str] | None = None
 
 
 class ConfigManager:
@@ -32,7 +32,7 @@ class ConfigManager:
             config_path = self.search_config_file()
 
         self.config_path = config_path if config_path else Path.home() / ".config" / "gpusnatcher" / "gpusnatcher.toml"
-        self.config: ConfigData | None
+        self.config: ConfigData = ConfigData()
 
     @property
     def config_data(self) -> ConfigData | None:
@@ -66,12 +66,6 @@ class ConfigManager:
 
     def update_config(self, key: str | list[str] | None = None) -> ConfigData:
         """Update one or more fields interactively."""
-        if not hasattr(self, "config"):
-            if key:
-                raise ValueError("Cannot update a single key when config is not initialized.")
-            placeholders = {f.name: None for f in fields(ConfigData)}
-            self.config = ConfigData(**placeholders)
-
         keys_to_update = key if key else [f.name for f in fields(ConfigData)]
         keys_to_update = [keys_to_update] if isinstance(keys_to_update, str) else keys_to_update
 
@@ -114,6 +108,10 @@ class ConfigManager:
             data = tomllib.load(f)
 
         valid_keys = {f.name for f in fields(ConfigData)}
+        update_keys = valid_keys - set(data.keys())
+        if update_keys:
+            update_config = self.update_config(update_keys)
+            data.update({key: getattr(update_config, key) for key in update_keys})
 
         return ConfigData(**{k: v for k, v in data.items() if k in valid_keys})
 
