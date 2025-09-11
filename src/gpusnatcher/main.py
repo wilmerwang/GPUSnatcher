@@ -118,7 +118,7 @@ def main() -> None:
                     p = multiprocessing.Process(
                         target=worker,
                         args=(
-                            gpu["index"],
+                            gpu_manager.gpu_maps[gpu["index"]] if gpu_manager.gpu_maps is not None else gpu["index"],
                             gpu["memory.free"],
                             ready_event,
                         ),

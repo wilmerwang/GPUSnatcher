@@ -56,6 +56,8 @@ class GPUManager:
 
         self.snatched_gpus: list = []
 
+        self._gpu_maps: dict[int, int] | None = None
+
     def get_free_gpus(self) -> list[dict[str, int] | None]:
         """Get a list of free GPUs.
 
@@ -85,6 +87,16 @@ class GPUManager:
         """Get the number of snatched GPUs."""
         return len(self.snatched_gpus)
 
+    @property
+    def gpu_maps(self) -> dict[int, int] | None:
+        """Get the GPU mapping."""
+        return self._gpu_maps
+
+    @gpu_maps.setter
+    def gpu_maps(self, value: dict[int, int] | None) -> None:
+        """Set the GPU mapping."""
+        self._gpu_maps = value
+
     def get_num_gpus_needed(self) -> int:
         """Get the number of GPUs still needed to snatch.
 
@@ -99,4 +111,7 @@ class GPUManager:
         if cuda_visible is None:
             return gpus
 
-        return [gpu for gpu in gpus if gpu["index"] in map(int, cuda_visible.split(","))]
+        visible_gpus = [gpu for gpu in gpus if gpu["index"] in map(int, cuda_visible.split(","))]
+        self.gpu_maps = {gpu["index"]: i for i, gpu in enumerate(visible_gpus)}
+
+        return visible_gpus
