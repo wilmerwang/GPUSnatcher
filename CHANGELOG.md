@@ -1,3 +1,14 @@
+## v1.8.0 (2025-09-11)
+
+### Feat
+
+- **config**: add prompt when config file do not contains some necessary keys
+- **debug**: add debug support
+
+### Fix
+
+- cuda index error when using CUDA_VISIBLE_DEVICES env
+
 ## v1.7.0 (2025-09-11)
 
 ### Refactor
