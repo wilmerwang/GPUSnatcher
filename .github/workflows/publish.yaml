@@ -33,5 +33,11 @@ jobs:
           UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
         run: uv publish
 
+      - name: Generate Changelog
+        run: awk '/^## v/ { if (found) exit; found=1 } found { print }' CHANGELOG.md > RELEASE_BODY.md
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: RELEASE_BODY.md
