@@ -1,4 +1,5 @@
 import time
+from contextlib import nullcontext
 
 from rich.live import Live
 from rich.spinner import Spinner
@@ -29,15 +30,21 @@ def compute_storage_size(memory: int, dtype: str = "float32", len_shape: int = 3
     return [int(sz)] * len_shape
 
 
-def countdown_timer(minutes: int, description: str = "Waiting") -> None:
+def countdown_timer(minutes: int, description: str = "Waiting", debug: bool = False) -> None:
     """Display a spinner with MM:SS countdown for the given minutes."""
     total_seconds = minutes * 60
 
-    with Live(console=console, refresh_per_second=10) as live:
+    context = nullcontext() if debug else Live(console=console, refresh_per_second=10)
+    with context as live:
         for remaining in range(total_seconds, 0, -1):
             mins, secs = divmod(remaining, 60)
-            spinner = Spinner("dots", text=f"[green]{description} in {mins:02d}:{secs:02d}[/green]")
-            live.update(spinner)
+
+            text = f"{description} in {mins:02d}:{secs:02d}"
+            if debug:
+                console.log(f"[blue]Debug:[/blue] {text}")
+            else:
+                spinner = Spinner("dots", text=f"[green]{text}[/green]")
+                live.update(spinner)
             time.sleep(1)
 
     console.log(f"\n[green]{description} completed![/green]")

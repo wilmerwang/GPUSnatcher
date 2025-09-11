@@ -2,6 +2,7 @@ import argparse
 import multiprocessing
 import secrets
 import time
+from contextlib import nullcontext
 from typing import Any
 
 import torch
@@ -17,6 +18,7 @@ def set_args() -> argparse.Namespace:
     """Set command line arguments."""
     parser = argparse.ArgumentParser(description="GPU Snatcher")
     parser.add_argument("-c", "--config", default=None, type=str, help="Path to config file")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     return parser.parse_args()
 
 
@@ -93,7 +95,8 @@ def main() -> None:
     processes = []
 
     try:
-        with console.status("[green]Snatching GPUs...[/green]"):
+        context = nullcontext() if args.debug else console.status("[green]Snatching GPUs...[/green]")
+        with context:
             while gpu_manager.num_snatched_gpus < gpu_manager.num_gpus:
                 num_gpus_needed = gpu_manager.get_num_gpus_needed()
                 free_gpus_needed = gpu_manager.get_free_gpus()[:num_gpus_needed]
@@ -107,6 +110,7 @@ def main() -> None:
                         "Be friendly... "
                         "waiting before allocation to avoid OOM from previous job's final test/cleanup... "
                     ),
+                    debug=args.debug,
                 )
                 successful_gpus_index = []
                 for gpu in free_gpus_needed:
@@ -143,7 +147,7 @@ def main() -> None:
             gpu_times_min=config.gpu_times_min,
         )
 
-        countdown_timer(config.gpu_times_min, description="Releasing GPUs...")
+        countdown_timer(config.gpu_times_min, description="Releasing GPUs...", debug=args.debug)
 
     except KeyboardInterrupt:
         console.log("[red]Interrupted by user. Cleaning up...[/red]")
