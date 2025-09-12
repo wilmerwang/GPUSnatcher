@@ -1,3 +1,9 @@
+## v1.8.1 (2025-09-12)
+
+### Fix
+
+- uncomment previously commented code
+
 ## v1.8.0 (2025-09-11)
 
 ### Feat
