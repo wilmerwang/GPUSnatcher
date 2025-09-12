@@ -49,8 +49,6 @@ def test_update_config(config_manager_with_path: ConfigManager, mocker: MockerFi
     mocker.patch(
         "gpusnatcher.configs.prompt.ask",
         side_effect=[
-            "2",  # gpu_nums
-            "20",  # gpu_times_min
             "0.9",  # gpu_free_memory_ratio_threshold
             "5",  # friendly_min
             "smtp.new.com",  # email_host
@@ -65,8 +63,6 @@ def test_update_config(config_manager_with_path: ConfigManager, mocker: MockerFi
     assert updated_config is not None
     assert isinstance(updated_config, ConfigData)
 
-    assert updated_config.gpu_nums == 2
-    assert updated_config.gpu_times_min == 20
     assert updated_config.gpu_free_memory_ratio_threshold == 0.9
     assert updated_config.email_host == "smtp.new.com"
     assert updated_config.email_user == "newuser"
@@ -84,13 +80,12 @@ def test_confirm_config(config_manager_with_path: ConfigManager, mocker: MockerF
 
     config_manager_with_path.confirm_config()
     assert config_manager_with_path.config is not None
-    assert config_manager_with_path.config.gpu_nums == 1  # Default value from fixture
 
 
 def test_confirm_config_update_then_keep(config_manager_with_path: ConfigManager, mocker: MockerFixture) -> None:
     """Test confirming configuration updates and keeping them."""
     config_manager_with_path.load_or_create()
-    inputs = iter(["n", "0,1", "y"])
+    inputs = iter(["n", "0", "y"])
     mocker.patch("gpusnatcher.configs.console.input", side_effect=lambda _: next(inputs))
     mocker.patch("gpusnatcher.configs.ConfigManager.save_config", return_value=None)
     mocker.patch("gpusnatcher.configs.console.log", return_value=None)
@@ -98,10 +93,10 @@ def test_confirm_config_update_then_keep(config_manager_with_path: ConfigManager
     def fake_update(keys: list[str] | str) -> ConfigData:
         cfg = config_manager_with_path.config
         for k in keys:
-            if k == "gpu_nums":
-                cfg.gpu_nums = 99
-            elif k == "gpu_times_min":
-                cfg.gpu_times_min = 999
+            if k == "gpu_free_memory_ratio_threshold":
+                cfg.gpu_free_memory_ratio_threshold = 0.9
+            elif k == "friendly_min":
+                cfg.friendly_min = 5
         return cfg
 
     mocker.patch("gpusnatcher.configs.ConfigManager.update_config", side_effect=fake_update)
@@ -109,5 +104,5 @@ def test_confirm_config_update_then_keep(config_manager_with_path: ConfigManager
     config_manager_with_path.confirm_config()
 
     assert config_manager_with_path.config is not None
-    assert config_manager_with_path.config.gpu_nums == 99
-    assert config_manager_with_path.config.gpu_times_min == 999
+    assert config_manager_with_path.config.gpu_free_memory_ratio_threshold == 0.9
+    assert config_manager_with_path.config.friendly_min == 5

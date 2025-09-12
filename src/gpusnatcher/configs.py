@@ -12,8 +12,6 @@ from gpusnatcher.logger import console, prompt
 class ConfigData:
     """Configuration data for GPU Snatcher."""
 
-    gpu_nums: int | None = None
-    gpu_times_min: int | None = None
     gpu_free_memory_ratio_threshold: float | None = None
     friendly_min: int | None = None
     email_host: str | None = None
@@ -71,7 +69,7 @@ class ConfigManager:
 
         for k in keys_to_update:
             current_value = getattr(self.config, k)
-            if k in ["gpu_nums", "gpu_times_min", "friendly_min"]:
+            if k == "friendly_min":
                 new_value = prompt.ask(f"Please enter the {k}: ", default=str(current_value or ""))
                 setattr(self.config, k, int(new_value))
             elif k == "gpu_free_memory_ratio_threshold":
