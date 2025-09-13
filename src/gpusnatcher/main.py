@@ -25,14 +25,16 @@ def set_args() -> argparse.Namespace:
 class Job:
     """A job to be executed when a GPU is free."""
 
-    def __init__(self, cmd: str, required_gpus: int = 1) -> None:
+    def __init__(self, cmd: str, required_gpus: int = 1, max_retries: int = 3) -> None:
         """Initialize a Job instance."""
         self.cmd = cmd
         self.required_gpus = required_gpus
+        self.retry_count = 0
+        self.max_retries = max_retries
 
     def __repr__(self) -> str:
         """Return a string representation of the Job."""
-        return f"<Job cmd={self.cmd!r} gpus={self.required_gpus}>"
+        return f"<Job cmd={self.cmd!r} gpus={self.required_gpus} retry={self.retry_count}/{self.max_retries}>"
 
 
 def worker(gpu_indices: list[int], job: Job, ready_event: Any) -> None:
@@ -68,6 +70,9 @@ def send_job_notification(email_mgr: EmailManager, job: Job, gpus: list[int], st
     elif status == "finished":
         subject = f"GPUSitter: Job finished on GPUs {gpu_str}"
         body = f"Job {job.cmd} has finished execution on GPUs {gpu_str}."
+    elif status == "failed":
+        subject = f"GPUSitter: Job failed on GPUs {gpu_str}"
+        body = f"Job {job.cmd} has failed on GPUs {gpu_str}."
     else:
         subject = "GPUSitter: Job status unknown"
         body = f"Job {job.cmd} on GPUs {gpu_str} has unknown status: {status}"
@@ -174,8 +179,15 @@ def main() -> None:
                 if p:
                     processes.append((p, job, assigned))
                 else:
-                    jobs.put(job)
-                    console.log(f"[yellow]Job {job} re-queued due to failed start[/yellow]")
+                    job.retry_count += 1
+                    if job.retry_count >= job.max_retries:
+                        send_job_notification(email_manager, job, assigned, "failed")
+                        console.log(f"[red]Job {job} reached max retries and is discarded[/red]")
+                    else:
+                        jobs.put(job)
+                        console.log(
+                            f"[yellow]Job {job} re-queued due to failed start (attempt {job.retry_count})[/yellow]"
+                        )
 
         for p, job, assigned in processes:
             p.join()
