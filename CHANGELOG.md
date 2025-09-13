@@ -1,3 +1,9 @@
+## v2.0.1 (2025-09-13)
+
+### Fix
+
+- there has not extra group in uv sync in ci
+
 ## v2.0.0 (2025-09-13)
 
 ### Feat
