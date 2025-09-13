@@ -186,7 +186,7 @@ wheels = [
 
 [[package]]
 name = "gpusitter"
-version = "1.8.1"
+version = "2.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "rich" },

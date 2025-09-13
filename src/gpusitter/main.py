@@ -14,7 +14,6 @@ from gpusitter.configs import ConfigData, ConfigManager
 from gpusitter.emails import EmailManager
 from gpusitter.gpu import GPUManager
 from gpusitter.logger import console
-from gpusitter.utils import countdown_timer
 
 
 def set_args() -> argparse.Namespace:
@@ -93,19 +92,6 @@ def send_job_notification(email_mgr: EmailManager, job: Job, gpus: list[int], st
         body = f"Job {job.cmd} on GPUs {gpu_str} has unknown status: {status}"
 
     email_mgr.send_email(subject=subject, body=body)
-    console.log(f"[blue]Notification sent: {subject}[/blue]")
-
-
-def check_finished(processes: list[tuple[multiprocessing.Process, Job, list[int]]], email_mgr: EmailManager) -> None:
-    """Check for finished processes and send notifications."""
-    finished = []
-    for p, job, assigned in processes:
-        if not p.is_alive():
-            send_job_notification(email_mgr, job, assigned, "finished")
-            p.join()
-            finished.append((p, job, assigned))
-    for item in finished:
-        processes.remove(item)
 
 
 def start_job(job: Job, assigned: list[int], email_mgr: EmailManager) -> multiprocessing.Process | None:
@@ -171,25 +157,17 @@ def main() -> None:
 
     try:
         context = nullcontext() if args.debug else console.status("[green]Waiting for jobs...[/green]")
-        with context:
+        with context as status:
             while not jobs.empty():
                 free_gpus = gpu_manager.get_free_gpus()
-
-                # Clean up finished processes and send notifications.
-                check_finished(processes, email_manager)
 
                 if not free_gpus:
                     continue
 
                 # Wait a friendly amount of time before allocating GPUs
-                countdown_timer(
-                    config.friendly_min,
-                    description=(
-                        "Be friendly... "
-                        "waiting before allocation to avoid OOM from previous job's final test/cleanup... "
-                    ),
-                    debug=args.debug,
-                )
+                for remaining in range(int(config.friendly_min * 60), 0, -1):
+                    status.update(f"[yellow]Waiting {remaining}s before allocating GPUs...[/yellow]")
+                    time.sleep(1)
 
                 # Re-check free GPUs after waiting
                 free_gpu_indices = [
@@ -199,6 +177,9 @@ def main() -> None:
                 job = jobs.get()
                 if len(free_gpu_indices) < job.required_gpus:
                     jobs.put(job)
+                    console.log(
+                        f"[yellow]Not enough free GPUs for job {job} (need {job.required_gpus}, have {len(free_gpu_indices)})[/yellow]"  # noqa E501
+                    )
                     continue
                 assigned = free_gpu_indices[: job.required_gpus]
 
