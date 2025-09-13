@@ -13,7 +13,7 @@ class ConfigData:
     """Configuration data for GPU Snatcher."""
 
     gpu_free_memory_ratio_threshold: float | None = None
-    friendly_min: int | None = None
+    friendly_min: int | float | None = None
     email_host: str | None = None
     email_user: str | None = None
     email_pwd: str | None = None
@@ -69,10 +69,7 @@ class ConfigManager:
 
         for k in keys_to_update:
             current_value = getattr(self.config, k)
-            if k == "friendly_min":
-                new_value = prompt.ask(f"Please enter the {k}: ", default=str(current_value or ""))
-                setattr(self.config, k, int(new_value))
-            elif k == "gpu_free_memory_ratio_threshold":
+            if k in ["gpu_free_memory_ratio_threshold", "friendly_min"]:
                 new_value = prompt.ask(f"Please enter the {k}: ", default=str(current_value or ""))
                 setattr(self.config, k, float(new_value))
             elif k == "email_receivers":

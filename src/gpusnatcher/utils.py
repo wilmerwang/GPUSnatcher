@@ -30,9 +30,9 @@ def compute_storage_size(memory: int, dtype: str = "float32", len_shape: int = 3
     return [int(sz)] * len_shape
 
 
-def countdown_timer(minutes: int, description: str = "Waiting", debug: bool = False) -> None:
+def countdown_timer(minutes: int | float, description: str = "Waiting", debug: bool = False) -> None:
     """Display a spinner with MM:SS countdown for the given minutes."""
-    total_seconds = minutes * 60
+    total_seconds = int(minutes * 60)
 
     context = nullcontext() if debug else Live(console=console, refresh_per_second=10)
     with context as live:
