@@ -1,11 +1,14 @@
 import argparse
+import datetime
 import multiprocessing
 import os
 import queue
 import shlex
 import subprocess
+import tempfile
+import time
 from contextlib import nullcontext
-from typing import Any
+from pathlib import Path
 
 from gpusnatcher.configs import ConfigData, ConfigManager
 from gpusnatcher.emails import EmailManager
@@ -38,19 +41,29 @@ class Job:
         return f"<Job cmd={self.cmd!r} gpus={self.required_gpus} retry={self.retry_count}/{self.max_retries}>"
 
 
-def worker(gpu_indices: list[int], job: Job, read_event: Any) -> None:
+def worker(gpu_indices: list[int], job: Job, status_file: Path) -> None:
     """Run a job on assigned GPUs."""
+    gpu_str = ",".join(map(str, gpu_indices))
+    env = os.environ.copy()
+    env["CUDA_VISIBLE_DEVICES"] = gpu_str
+
+    session_name = f"GPUSitter_{job.cmd.replace(' ', '_')[:20]}"
     try:
-        gpu_str = ",".join(map(str, gpu_indices))
-        env = os.environ.copy()
-        env["CUDA_VISIBLE_DEVICES"] = gpu_str
-        cmd_list = shlex.split(job.cmd)
+        subprocess.run(  # noqa S603
+            ["tmux", "has-session", "-t", session_name],  # noqa S603
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        tmux_cmd = (
+            f'tmux new-window -t {session_name} -n {job.retry_count} "{job.cmd}; echo $? > {status_file}; exec bash"'
+        )
+    except subprocess.CalledProcessError:
+        tmux_cmd = f'tmux new-session -d -s {session_name} -n {job.retry_count} "{job.cmd}; echo $? > {status_file}; exec bash"'  # noqa E501
 
-        subprocess.run(cmd_list, env=env, cwd=os.getcwd(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # noqa S603
-        read_event.set()
+    cmd_list = shlex.split(tmux_cmd)
 
-    except Exception as e:
-        console.log(f"[red]Failed to start job {job}: {e}[/red]")
+    subprocess.run(cmd_list, env=env, cwd=os.getcwd())  # noqa S603
 
 
 def parse_job(job_str: str) -> Job:
@@ -97,21 +110,35 @@ def check_finished(processes: list[tuple[multiprocessing.Process, Job, list[int]
 
 def start_job(job: Job, assigned: list[int], email_mgr: EmailManager) -> multiprocessing.Process | None:
     """Start a job in a separate process."""
-    read_event = multiprocessing.Event()
-    p = multiprocessing.Process(target=worker, args=(assigned, job, read_event))
-    p.start()
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
+    safe_name = f"job_{now_str}_retry{job.retry_count}.status"
+    status_file = Path(tempfile.gettempdir()) / safe_name
 
-    if read_event.wait(30) or p.is_alive():
+    print(status_file)
+    p = multiprocessing.Process(target=worker, args=(assigned, job, status_file))
+    p.start()
+    p.join(timeout=5)  # Give the process a moment to start
+
+    for _ in range(60):
+        if status_file.exists():
+            break
+        time.sleep(1)
+
+    if not status_file.exists():
+        send_job_notification(email_mgr, job, assigned, "started")
+        console.log(f"[green]Job {job} started successfully on GPUs {assigned}[/green]")
+        return p
+
+    with open(status_file) as f:
+        status = f.read().strip()
+    status_file.unlink(missing_ok=True)
+
+    if status == "0":
         send_job_notification(email_mgr, job, assigned, "started")
         console.log(f"[green]Job {job} started successfully on GPUs {assigned}[/green]")
         return p
 
     console.log(f"[red]Job {job} failed to start on GPUs {assigned}[/red]")
-    try:
-        p.terminate()
-        p.join()
-    except Exception as e:
-        console.log(f"[red]Failed to terminate process for job {job}: {e}[/red]")
     return None
 
 
@@ -149,7 +176,7 @@ def main() -> None:
             while not jobs.empty():
                 free_gpus = gpu_manager.get_free_gpus()
 
-                # Clean up finished processes and send notifications、
+                # Clean up finished processes and send notifications.
                 check_finished(processes, email_manager)
 
                 if not free_gpus:
@@ -191,18 +218,8 @@ def main() -> None:
                             f"[yellow]Job {job} re-queued due to failed start (attempt {job.retry_count})[/yellow]"
                         )
 
-        for p, job, assigned in processes:
-            p.join()
-            send_job_notification(email_manager, job, assigned, "finished")
-
     except KeyboardInterrupt:
-        console.log("[red]Interrupted by user. Cleaning up...[/red]")
-    finally:
-        console.log("[red]Cleaning up GPU workers...[/red]")
-        for p, _, _ in processes:
-            p.terminate()
-            p.join()
-        console.log("[green]All GPU workers terminated. Exiting.[/green]")
+        console.log("[red]Interrupted by user. Exiting.[/red]")
 
 
 if __name__ == "__main__":
