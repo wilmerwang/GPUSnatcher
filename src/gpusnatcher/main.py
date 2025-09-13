@@ -46,7 +46,7 @@ def worker(gpu_indices: list[int], job: Job, read_event: Any) -> None:
         env["CUDA_VISIBLE_DEVICES"] = gpu_str
         cmd_list = shlex.split(job.cmd)
 
-        subprocess.run(cmd_list, env=env, cwd=os.getcwd())  # noqa S603
+        subprocess.run(cmd_list, env=env, cwd=os.getcwd(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)  # noqa S603
         read_event.set()
 
     except Exception as e:
