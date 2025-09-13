@@ -168,6 +168,7 @@ def main() -> None:
                 for remaining in range(int(config.friendly_min * 60), 0, -1):
                     status.update(f"[yellow]Waiting {remaining}s before allocating GPUs...[/yellow]")
                     time.sleep(1)
+                status.update("[green]Waiting for jobs...[/green]")
 
                 # Re-check free GPUs after waiting
                 free_gpu_indices = [
