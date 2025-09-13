@@ -1,3 +1,22 @@
+## v2.0.0 (2025-09-13)
+
+### Feat
+
+- version 2.0.0 for real job running
+- add tmux support
+- remove stdout and stderr from jobs
+- **config**: allow friendly_min to accept float values
+- add max_retry support
+- using jobs instead of fake tasks
+- remove the property related to gpu number
+- remove gpu_nums and gpu_tims_min from config
+
+### Fix
+
+- change sender name to GPUSitter
+- ensure job is start or not
+- using cmd_list instead of cmd_str
+
 ## v1.8.1 (2025-09-12)
 
 ### Fix
