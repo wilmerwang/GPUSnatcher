@@ -28,7 +28,7 @@ class EmailManager:
         """Initialize the email message."""
         message = MIMEText(f"{body}", "plain", "utf-8")
         message["Subject"] = f"{subject}"
-        message["From"] = formataddr(("GPUSnatcher", self.sender))
+        message["From"] = formataddr(("GPUSitter", self.sender))
         message["To"] = ", ".join(self.receivers)
         return message
 
