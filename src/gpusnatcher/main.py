@@ -38,7 +38,7 @@ class Job:
         return f"<Job cmd={self.cmd!r} gpus={self.required_gpus} retry={self.retry_count}/{self.max_retries}>"
 
 
-def worker(gpu_indices: list[int], job: Job, ready_event: Any) -> None:
+def worker(gpu_indices: list[int], job: Job, read_event: Any) -> None:
     """Run a job on assigned GPUs."""
     try:
         gpu_str = ",".join(map(str, gpu_indices))
@@ -46,9 +46,9 @@ def worker(gpu_indices: list[int], job: Job, ready_event: Any) -> None:
         env["CUDA_VISIBLE_DEVICES"] = gpu_str
         cmd_list = shlex.split(job.cmd)
 
-        subprocess.Popen(cmd_list, env=env, cwd=os.getcwd())  # noqa S603
+        subprocess.run(cmd_list, env=env, cwd=os.getcwd())  # noqa S603
+        read_event.set()
 
-        ready_event.set()
     except Exception as e:
         console.log(f"[red]Failed to start job {job}: {e}[/red]")
 
@@ -97,11 +97,11 @@ def check_finished(processes: list[tuple[multiprocessing.Process, Job, list[int]
 
 def start_job(job: Job, assigned: list[int], email_mgr: EmailManager) -> multiprocessing.Process | None:
     """Start a job in a separate process."""
-    ready_event = multiprocessing.Event()
-    p = multiprocessing.Process(target=worker, args=(assigned, job, ready_event))
+    read_event = multiprocessing.Event()
+    p = multiprocessing.Process(target=worker, args=(assigned, job, read_event))
     p.start()
 
-    if ready_event.wait(timeout=5) and p.is_alive():
+    if read_event.wait(30) or p.is_alive():
         send_job_notification(email_mgr, job, assigned, "started")
         console.log(f"[green]Job {job} started successfully on GPUs {assigned}[/green]")
         return p
