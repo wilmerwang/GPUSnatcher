@@ -1,3 +1,9 @@
+## v2.0.2 (2025-09-13)
+
+### Refactor
+
+- update the spinner
+
 ## v2.0.1 (2025-09-13)
 
 ### Fix
