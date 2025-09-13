@@ -2,6 +2,7 @@ import argparse
 import multiprocessing
 import os
 import queue
+import shlex
 import subprocess
 from contextlib import nullcontext
 from typing import Any
@@ -43,8 +44,9 @@ def worker(gpu_indices: list[int], job: Job, ready_event: Any) -> None:
         gpu_str = ",".join(map(str, gpu_indices))
         env = os.environ.copy()
         env["CUDA_VISIBLE_DEVICES"] = gpu_str
+        cmd_list = shlex.split(job.cmd)
 
-        subprocess.Popen(job.cmd, env=env)  # noqa S603
+        subprocess.Popen(cmd_list, env=env, cwd=os.getcwd())  # noqa S603
 
         ready_event.set()
     except Exception as e:
