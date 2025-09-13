@@ -4,7 +4,7 @@ from contextlib import nullcontext
 from rich.live import Live
 from rich.spinner import Spinner
 
-from gpusnatcher.logger import console
+from gpusitter.logger import console
 
 
 def compute_storage_size(memory: int, dtype: str = "float32", len_shape: int = 3) -> list[int]:

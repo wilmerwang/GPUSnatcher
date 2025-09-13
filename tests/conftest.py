@@ -4,13 +4,13 @@ from pathlib import Path
 import pytest
 import tomli_w
 
-from gpusnatcher.configs import ConfigData
+from gpusitter.configs import ConfigData
 
 
 @pytest.fixture
 def config_path(tmp_path: Path, config_data: ConfigData) -> Path:
     """Fixture to provide a temporary config file path."""
-    config_path = tmp_path / "gpusnatcher.toml"
+    config_path = tmp_path / "gpusitter.toml"
 
     with config_path.open("wb") as f:
         tomli_w.dump(asdict(config_data), f)

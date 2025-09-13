@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 from rich.table import Table
 
-from gpusnatcher.configs import ConfigData, ConfigManager
+from gpusitter.configs import ConfigData, ConfigManager
 
 
 @pytest.fixture
@@ -29,8 +29,8 @@ def test_load_config(config_manager_with_path: ConfigManager) -> None:
 def test_save_config(config_manager_with_path: ConfigManager, tmp_path: Path) -> None:
     """Test saving configuration to a file."""
     config_manager_with_path.load_or_create()
-    config_manager_with_path.save_config(tmp_path / "gpusnatcher.toml")
-    assert (tmp_path / "gpusnatcher.toml").exists()
+    config_manager_with_path.save_config(tmp_path / "gpusitter.toml")
+    assert (tmp_path / "gpusitter.toml").exists()
 
 
 def test_pad_config(config_manager_with_path: ConfigManager) -> None:
@@ -47,7 +47,7 @@ def test_update_config(config_manager_with_path: ConfigManager, mocker: MockerFi
     """Test updating configuration interactively."""
     config_manager_with_path.load_or_create()
     mocker.patch(
-        "gpusnatcher.configs.prompt.ask",
+        "gpusitter.configs.prompt.ask",
         side_effect=[
             "0.9",  # gpu_free_memory_ratio_threshold
             "5",  # friendly_min
@@ -74,9 +74,9 @@ def test_update_config(config_manager_with_path: ConfigManager, mocker: MockerFi
 def test_confirm_config(config_manager_with_path: ConfigManager, mocker: MockerFixture) -> None:
     """Test confirming configuration interactively."""
     config_manager_with_path.load_or_create()
-    mocker.patch("gpusnatcher.configs.console.input", return_value="y")
-    mocker.patch("gpusnatcher.configs.ConfigManager.save_config", return_value=None)
-    mocker.patch("gpusnatcher.configs.console.log", return_value=None)
+    mocker.patch("gpusitter.configs.console.input", return_value="y")
+    mocker.patch("gpusitter.configs.ConfigManager.save_config", return_value=None)
+    mocker.patch("gpusitter.configs.console.log", return_value=None)
 
     config_manager_with_path.confirm_config()
     assert config_manager_with_path.config is not None
@@ -86,9 +86,9 @@ def test_confirm_config_update_then_keep(config_manager_with_path: ConfigManager
     """Test confirming configuration updates and keeping them."""
     config_manager_with_path.load_or_create()
     inputs = iter(["n", "0", "y"])
-    mocker.patch("gpusnatcher.configs.console.input", side_effect=lambda _: next(inputs))
-    mocker.patch("gpusnatcher.configs.ConfigManager.save_config", return_value=None)
-    mocker.patch("gpusnatcher.configs.console.log", return_value=None)
+    mocker.patch("gpusitter.configs.console.input", side_effect=lambda _: next(inputs))
+    mocker.patch("gpusitter.configs.ConfigManager.save_config", return_value=None)
+    mocker.patch("gpusitter.configs.console.log", return_value=None)
 
     def fake_update(keys: list[str] | str) -> ConfigData:
         cfg = config_manager_with_path.config
@@ -99,7 +99,7 @@ def test_confirm_config_update_then_keep(config_manager_with_path: ConfigManager
                 cfg.friendly_min = 5
         return cfg
 
-    mocker.patch("gpusnatcher.configs.ConfigManager.update_config", side_effect=fake_update)
+    mocker.patch("gpusitter.configs.ConfigManager.update_config", side_effect=fake_update)
 
     config_manager_with_path.confirm_config()
 

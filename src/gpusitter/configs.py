@@ -5,7 +5,7 @@ from pathlib import Path
 import tomli_w
 from rich.table import Table
 
-from gpusnatcher.logger import console, prompt
+from gpusitter.logger import console, prompt
 
 
 @dataclass

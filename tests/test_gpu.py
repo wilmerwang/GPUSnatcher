@@ -1,4 +1,4 @@
-from gpusnatcher.gpu import query_gpu
+from gpusitter.gpu import query_gpu
 
 
 def test_query_gpu() -> None:

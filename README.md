@@ -1,44 +1,26 @@
-[简体中文](README-CN.md) | English
+# GPUSitter
 
-# GPUSnatcher
-
-GPUSnatcher is a tool for GPU resource monitoring and snatching, designed to help users temporarily monitor and grab idle GPU resources.
+Watch for idle GPUs and run your jobs: launches jobs in tmux, keeps logs/status and sends start/finish emails..
 
 ## Features
 
 - Real-time GPU usage monitoring
 - Command-line interface, easy to integrate into workflows
 - Email notifications
-- Scheduled automatic resource release
+- Scheduled automatic job running
 
 ## Installation
 
 ```
-# Without pytorch
-pip install gpusnatcher
-
-# with pytorch
-pip install gpusnatcher[cuda129]
-```
-
-Local installation：
-
-```
-git clone https://github.com/wilmerwang/GPUSnatcher.git
-cd GPUSnatcher
-
-# Without pytorch
-pip install .
-
-# with pytorch
-pip install .[cuda129]
+pip install gpusitter
 ```
 
 ## Usage
 
 ```
-# Run for the first time to configure parameters
-gpusk
+gpust --job="python train.py"  # with 1 gpu
+
+gpust --job="python train.py:4"  # with 4 gpus
 ```
 
 Parameter description:
@@ -47,8 +29,8 @@ Parameter description:
 class ConfigData:
     """Configuration data for GPU Snatcher."""
 
-    gpu_nums: int
-    gpu_times_min: int
+    gpu_free_memory_ratio_threshold: float
+    friendly_min: float
     email_host: str
     email_user: str
     email_pwd: str
@@ -56,8 +38,8 @@ class ConfigData:
     email_receivers: list[str]
 ```
 
-- gpu_nums: Number of GPUs to snatch
-- gpu_times_min: Time to release resources after completing the specified GPU snatching plan
+- gpu_free_memory_ratio_threshold: The minimum free GPU memory ratio required to consider a GPU available. Only GPUs with free memory above this threshold will be used.
+- friendly_min: Waiting time (in seconds) before allocating GPUs. Helps prevent OOM from previous jobs.
 - email_host: Email server, e.g., smtp.qq.com
 - email_user: Email address
 - email_pwd: SMTP authorization code

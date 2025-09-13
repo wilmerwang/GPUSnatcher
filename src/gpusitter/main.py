@@ -10,11 +10,11 @@ import time
 from contextlib import nullcontext
 from pathlib import Path
 
-from gpusnatcher.configs import ConfigData, ConfigManager
-from gpusnatcher.emails import EmailManager
-from gpusnatcher.gpu import GPUManager
-from gpusnatcher.logger import console
-from gpusnatcher.utils import countdown_timer
+from gpusitter.configs import ConfigData, ConfigManager
+from gpusitter.emails import EmailManager
+from gpusitter.gpu import GPUManager
+from gpusitter.logger import console
+from gpusitter.utils import countdown_timer
 
 
 def set_args() -> argparse.Namespace:
@@ -114,7 +114,6 @@ def start_job(job: Job, assigned: list[int], email_mgr: EmailManager) -> multipr
     safe_name = f"job_{now_str}_retry{job.retry_count}.status"
     status_file = Path(tempfile.gettempdir()) / safe_name
 
-    print(status_file)
     p = multiprocessing.Process(target=worker, args=(assigned, job, status_file))
     p.start()
     p.join(timeout=5)  # Give the process a moment to start
