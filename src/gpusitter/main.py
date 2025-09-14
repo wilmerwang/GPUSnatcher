@@ -14,6 +14,7 @@ from gpusitter.configs import ConfigData, ConfigManager
 from gpusitter.emails import EmailManager
 from gpusitter.gpu import GPUManager
 from gpusitter.logger import console
+from gpusitter.utils import DummyStatus
 
 
 def set_args() -> argparse.Namespace:
@@ -156,7 +157,7 @@ def main() -> None:
         jobs.put(parse_job(job_str))
 
     try:
-        context = nullcontext() if args.debug else console.status("[green]Waiting for jobs...[/green]")
+        context = nullcontext(DummyStatus()) if args.debug else console.status("[green]Waiting for jobs...[/green]")
         with context as status:
             while not jobs.empty():
                 free_gpus = gpu_manager.get_free_gpus()

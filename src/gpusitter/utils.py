@@ -48,3 +48,11 @@ def countdown_timer(minutes: int | float, description: str = "Waiting", debug: b
             time.sleep(1)
 
     console.log(f"\n[green]{description} completed![/green]")
+
+
+class DummyStatus:
+    """A dummy status context manager for debug mode."""
+
+    def update(self, message: str) -> None:
+        """Update the status message."""
+        console.log(message)
