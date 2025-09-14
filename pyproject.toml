@@ -11,6 +11,7 @@ description = "Watch for idle GPUs and run your jobs: launches jobs in tmux, kee
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "nvidia-ml-py>=13.580.82",
     "rich>=14.1.0",
     "tomli-w>=1.2.0",
 ]

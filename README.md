@@ -10,7 +10,7 @@ Watch for idle GPUs and run your jobs: launches jobs in tmux, keeps logs/status 
 - Scheduled automatic job running
 
 ## Dependencies
-- nvidia-smi
+
 - tmux
 
 ## Installation

@@ -1,9 +1,11 @@
+import contextlib
 import os
-import subprocess
+
+import pynvml
 
 
 def query_gpu() -> list[dict[str, int]] | None:
-    """Query GPU information.
+    """Query GPU information using pynvml.
 
     Returns:
         list[dict[str, int]] | None: A list of dictionaries containing GPU information, or None if querying fails.
@@ -12,16 +14,30 @@ def query_gpu() -> list[dict[str, int]] | None:
             - memory.free (int): Free memory in MiB
             - memory.total (int): Total memory in MiB
     """
-    qargs = ["index", "memory.free", "memory.total"]
-    cmd = ["nvidia-smi", f"--query-gpu={','.join(qargs)}", "--format=csv,noheader,nounits"]
     try:
-        output = subprocess.check_output(cmd, encoding="utf-8")  # noqa: S603
+        pynvml.nvmlInit()
+        device_count = pynvml.nvmlDeviceGetCount()
+        gpu_info = []
+
+        for i in range(device_count):
+            handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+            mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
+            gpu_info.append(
+                {
+                    "index": i,
+                    "memory.free": mem.free // (1024**2),  # bytes -> MiB
+                    "memory.total": mem.total // (1024**2),  # bytes -> MiB
+                }
+            )
+
+        return gpu_info if gpu_info else None
+
     except Exception as e:
-        raise RuntimeError("Failed to query GPU:") from e
+        raise RuntimeError("Failed to query GPU using pynvml:") from e
 
-    results = [line.strip().split(", ") for line in output.strip().split("\n")]
-
-    return [dict(zip(qargs, map(int, r), strict=False)) for r in results]
+    finally:
+        with contextlib.suppress(Exception):
+            pynvml.nvmlShutdown()
 
 
 class GPUManager:
