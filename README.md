@@ -9,6 +9,10 @@ Watch for idle GPUs and run your jobs: launches jobs in tmux, keeps logs/status 
 - Email notifications
 - Scheduled automatic job running
 
+## Dependencies
+- nvidia-smi
+- tmux
+
 ## Installation
 
 ```
@@ -17,10 +21,15 @@ pip install gpusitter
 
 ## Usage
 
-```
-gpust --job="python train.py"  # with 1 gpu
+```bash
+# One job with 1 gpu
+gpust --job="python train.py"
 
-gpust --job="python train.py:4"  # with 4 gpus
+# One job with 4 gpus
+gpust --job="python train.py:4"
+
+# Two jobs with 1 gpu and 4 gpus respectively
+gpust --job="python train.py" --job="python train.py --epoch=12 --lr=-.001:4"
 ```
 
 Parameter description:
