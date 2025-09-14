@@ -32,6 +32,16 @@ gpust --job="python train.py:4"
 gpust --job="python train.py" --job="python train.py --epoch=12 --lr=-.001:4"
 ```
 
+After starting your job, you can monitor its progress using `tmux`.
+
+```bash
+# List all running tmux sessions
+tmux ls
+
+# Attach to your job session (replace GPUSitter_xxx_xx with your session name)
+tmux a -t GPUSitter_xxx_xx
+```
+
 Parameter description:
 
 ```
