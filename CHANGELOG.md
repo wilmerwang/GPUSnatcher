@@ -1,3 +1,14 @@
+## v2.0.3 (2025-09-15)
+
+### Fix
+
+- prevent NoneType error when updating status in debug mode
+
+### Refactor
+
+- **gpu**: using pynvml instead of "nvidia-smi" to query gpus
+- update the spinner when friendly sleep is end
+
 ## v2.0.2 (2025-09-13)
 
 ### Refactor
