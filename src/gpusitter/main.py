@@ -3,6 +3,7 @@ import datetime
 import multiprocessing
 import os
 import queue
+import re
 import shlex
 import subprocess
 import tempfile
@@ -44,10 +45,13 @@ class Job:
 def worker(gpu_indices: list[int], job: Job, status_file: Path) -> None:
     """Run a job on assigned GPUs."""
     gpu_str = ",".join(map(str, gpu_indices))
-    env = os.environ.copy()
-    env["CUDA_VISIBLE_DEVICES"] = gpu_str
 
-    session_name = f"GPUSitter_{job.cmd.replace(' ', '_')[:20]}"
+    raw_name = job.cmd.replace(" ", "_")
+    safe_name = re.sub(r"\W+", "_", raw_name)
+    session_name = f"GPUSitter_{safe_name}"
+
+    env = os.environ.copy()
+
     try:
         subprocess.run(  # noqa S603
             ["tmux", "has-session", "-t", session_name],  # noqa S603
@@ -55,11 +59,9 @@ def worker(gpu_indices: list[int], job: Job, status_file: Path) -> None:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        tmux_cmd = (
-            f'tmux new-window -t {session_name} -n {job.retry_count} "{job.cmd}; echo $? > {status_file}; exec bash"'
-        )
+        tmux_cmd = f'tmux new-window -t {session_name} -e CUDA_VISIBLE_DEVICES={gpu_str} "{job.cmd}; echo $? > {status_file}; exec bash"'  # noqa E501
     except subprocess.CalledProcessError:
-        tmux_cmd = f'tmux new-session -d -s {session_name} -n {job.retry_count} "{job.cmd}; echo $? > {status_file}; exec bash"'  # noqa E501
+        tmux_cmd = f'tmux new-session -d -s {session_name} -e CUDA_VISIBLE_DEVICES={gpu_str} "{job.cmd}; echo $? > {status_file}; exec bash"'  # noqa E501
 
     cmd_list = shlex.split(tmux_cmd)
 
@@ -171,19 +173,17 @@ def main() -> None:
                     time.sleep(1)
                 status.update("[green]Waiting for jobs...[/green]")
 
-                # Re-check free GPUs after waiting
-                free_gpu_indices = [
-                    gpu_manager.gpu_maps(gpu["index"]) if gpu_manager.gpu_maps is not None else gpu["index"]
-                    for gpu in free_gpus
-                ]
+                free_gpu_indexes = [gpu["index"] for gpu in free_gpus]
+
+                # Check on running processes
                 job = jobs.get()
-                if len(free_gpu_indices) < job.required_gpus:
+                if len(free_gpu_indexes) < job.required_gpus:
                     jobs.put(job)
                     console.log(
-                        f"[yellow]Not enough free GPUs for job {job} (need {job.required_gpus}, have {len(free_gpu_indices)})[/yellow]"  # noqa E501
+                        f"[yellow]Not enough free GPUs for job {job} (need {job.required_gpus}, have {len(free_gpus)})[/yellow]"  # noqa E501
                     )
                     continue
-                assigned = free_gpu_indices[: job.required_gpus]
+                assigned = free_gpu_indexes[: job.required_gpus]
 
                 # Start the job in a separate process
                 p = start_job(job, assigned, email_manager)
