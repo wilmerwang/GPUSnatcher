@@ -53,19 +53,31 @@ class GPUManager:
 
         self._gpu_maps: dict[int, int] | None = None
 
+    def get_all_gpus(self) -> list[dict[str, int]]:
+        """Get a list of all GPUs.
+
+        Returns:
+            list[dict[str, int]]: A list of dictionaries containing information about all GPUs.
+        """
+        gpus = query_gpu()
+        if gpus is None:
+            return []
+
+        return self.get_visible_gpus(gpus)
+
     def get_free_gpus(self) -> list[dict[str, int] | None]:
         """Get a list of free GPUs.
 
         Returns:
             list[dict[str, int] | None]: A list of dictionaries containing information about free GPUs.
         """
-        gpus = query_gpu()
-        if gpus is None:
+        all_gpus = self.get_all_gpus()
+        if not all_gpus:
             return []
 
-        gpus = self.get_visible_gpus(gpus)
-
-        return [gpu for gpu in gpus if gpu["memory.free"] / gpu["memory.total"] > self.gpu_free_memory_ratio_threshold]
+        return [
+            gpu for gpu in all_gpus if gpu["memory.free"] / gpu["memory.total"] > self.gpu_free_memory_ratio_threshold
+        ]
 
     @property
     def gpu_maps(self) -> dict[int, int] | None:

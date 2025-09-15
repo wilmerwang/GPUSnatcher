@@ -15,7 +15,7 @@ from gpusitter.configs import ConfigData, ConfigManager
 from gpusitter.emails import EmailManager
 from gpusitter.gpu import GPUManager
 from gpusitter.logger import console
-from gpusitter.utils import DummyStatus
+from gpusitter.utils import DummyStatus, check_jobs
 
 
 def set_args() -> argparse.Namespace:
@@ -157,6 +157,15 @@ def main() -> None:
     jobs = queue.Queue()
     for job_str in args.jobs or []:
         jobs.put(parse_job(job_str))
+
+    failed_jobs = check_jobs(jobs, gpu_manager)
+    if failed_jobs:
+        for job in failed_jobs:
+            console.log(
+                f"[red]Job {job} requires more GPUs: {job.required_gpus} "
+                f"than available {len(gpu_manager.get_all_gpus())}.[/red]"
+            )
+        exit(1)
 
     try:
         context = nullcontext(DummyStatus()) if args.debug else console.status("[green]Waiting for jobs...[/green]")

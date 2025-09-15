@@ -1,9 +1,11 @@
+import queue
 import time
 from contextlib import nullcontext
 
 from rich.live import Live
 from rich.spinner import Spinner
 
+from gpusitter.gpu import GPUManager
 from gpusitter.logger import console
 
 
@@ -56,3 +58,12 @@ class DummyStatus:
     def update(self, message: str) -> None:
         """Update the status message."""
         console.log(message)
+
+
+def check_jobs(jobs: queue.Queue, gpu_manager: GPUManager) -> list | None:
+    """Check the status of jobs in the queue and allocate GPUs as needed."""
+    all_gpus = gpu_manager.get_all_gpus()
+
+    failure_results = [job for job in list(jobs.queue) if job.required_gpus > len(all_gpus)]
+
+    return failure_results if failure_results else None
