@@ -1,3 +1,9 @@
+## v2.0.4 (2025-09-15)
+
+### Fix
+
+- prevent CUDA_VISIBLE_DEVICES env in tmux
+
 ## v2.0.3 (2025-09-15)
 
 ### Fix
