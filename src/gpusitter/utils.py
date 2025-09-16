@@ -1,7 +1,10 @@
+import getpass
 import queue
+import socket
 import time
 from contextlib import nullcontext
 
+import psutil
 from rich.live import Live
 from rich.spinner import Spinner
 
@@ -67,3 +70,18 @@ def check_jobs(jobs: queue.Queue, gpu_manager: GPUManager) -> list | None:
     failure_results = [job for job in list(jobs.queue) if job.required_gpus > len(all_gpus)]
 
     return failure_results if failure_results else None
+
+
+def get_server_info() -> tuple[str, str | None, str]:
+    """Get server information including hostname and GPU details."""
+    hostname = socket.gethostname()
+    username = getpass.getuser()
+
+    iface = "ppp0"
+    ip = None
+    if iface in psutil.net_if_addrs():
+        for snic in psutil.net_if_addrs()[iface]:
+            if snic.family == 2:  # AF_INET
+                ip = snic.address
+
+    return hostname, ip, username

@@ -15,7 +15,7 @@ from gpusitter.configs import ConfigData, ConfigManager
 from gpusitter.emails import EmailManager
 from gpusitter.gpu import GPUManager
 from gpusitter.logger import console
-from gpusitter.utils import DummyStatus, check_jobs
+from gpusitter.utils import DummyStatus, check_jobs, get_server_info
 
 
 def set_args() -> argparse.Namespace:
@@ -80,19 +80,22 @@ def parse_job(job_str: str) -> Job:
 
 def send_job_notification(email_mgr: EmailManager, job: Job, gpus: list[int], status: str) -> None:
     """Send a notification email about job status."""
+    server_name, ip, user_name = get_server_info()
+    server_info = f"{user_name}@{ip} in Server: {server_name}" if ip else f"{user_name} in Server: {server_name}"
+
     gpu_str = ", ".join(map(str, gpus))
     if status == "started":
         subject = f"GPUSitter: Job started on GPUs {gpu_str}"
-        body = f"Job {job.cmd} started successfully on GPUs {gpu_str}."
+        body = f"Job {job.cmd} started successfully on GPUs {gpu_str}.\n {server_info}"
     elif status == "finished":
         subject = f"GPUSitter: Job finished on GPUs {gpu_str}"
-        body = f"Job {job.cmd} has finished execution on GPUs {gpu_str}."
+        body = f"Job {job.cmd} has finished execution on GPUs {gpu_str}.\n {server_info}"
     elif status == "failed":
         subject = f"GPUSitter: Job failed on GPUs {gpu_str}"
-        body = f"Job {job.cmd} has failed on GPUs {gpu_str}."
+        body = f"Job {job.cmd} has failed on GPUs {gpu_str}.\n {server_info}"
     else:
         subject = "GPUSitter: Job status unknown"
-        body = f"Job {job.cmd} on GPUs {gpu_str} has unknown status: {status}"
+        body = f"Job {job.cmd} on GPUs {gpu_str} has unknown status: {status}.\n {server_info}"
 
     email_mgr.send_email(subject=subject, body=body)
 
