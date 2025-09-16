@@ -1,3 +1,13 @@
+## v2.1.0 (2025-09-17)
+
+### Feat
+
+- add server information in the email notification
+
+### Fix
+
+- prevent gpust from hanging when job requests more GPUs than available
+
 ## v2.0.4 (2025-09-15)
 
 ### Fix
